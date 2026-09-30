@@ -267,6 +267,11 @@ td.c { display: flex; align-items: center; gap: 8px; }
 .arr b { font-weight: 400; font-size: 24px; line-height: 1; color: var(--accent); }
 .eqs { display: flex; flex-direction: column; gap: 4px; font: 13px var(--f-num); color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
 .eqs div { overflow-wrap: anywhere; }
+.credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.credit p { margin: 0; }
+.credit b { color: var(--fg); font-weight: 600; }
+.credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line); }
+.credit a:hover { color: var(--fg); text-decoration-color: var(--muted); }
 @media (max-width: 480px) { .wrap { padding-inline: 16px; } h1 { font-size: 1.35rem; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -469,6 +474,9 @@ td.c { display: flex; align-items: center; gap: 8px; }
       </ul>
     </article>
   </div>
+  <footer class="credit">
+    <p><b>Kelly Arnett</b> · <a href="https://cmi.hms.harvard.edu/" target="_blank" rel="noopener noreferrer">Center for Macromolecular Interactions (CMI)</a>, Harvard Medical School</p>
+  </footer>
 </div>
 
 <script>
