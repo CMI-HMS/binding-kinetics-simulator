@@ -119,7 +119,7 @@ h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; t
 .row3 .field label .u { margin-left: 4px; }
 .row3 .spin input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 12.5px var(--f-num); color: var(--fg); padding: 0; }
 .row3 .spin button { width: 26px; }
-.agrid { display: grid; grid-template-columns: 44px repeat(3, minmax(0, 1fr)) 12px; gap: 5px 5px; align-items: center; }
+.agrid { display: grid; grid-template-columns: 44px repeat(2, minmax(0, 1fr)) 12px; gap: 5px 5px; align-items: center; }
 .ahead { display: flex; align-items: center; gap: 2px; min-width: 0; border-bottom: 3px solid var(--ac); padding-bottom: 3px; }
 .ahead input[type="checkbox"] { margin: 0; width: 13px; height: 13px; accent-color: var(--ac); flex: none; }
 .ahead .aname { min-width: 0; width: 100%; font: 600 11.5px var(--f-ui); text-overflow: ellipsis; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 2px 1px; }
@@ -500,16 +500,15 @@ td.c { display: flex; align-items: center; gap: 8px; }
     an: [
       { name: "Analyte 1", on: true,  ka: 1e5, kd: 1e-3, KD: 10 },
       { name: "Analyte 2", on: false, ka: 1e5, kd: 1e-2, KD: 100 },
-      { name: "Analyte 3", on: false, ka: 5e5, kd: 5e-4, KD: 1 },
     ],
     calc: "K",                          // which of ka, kd, KD is calculated, for every analyte
     rmax: 10, ta: 300, td: 600, tb: 60, ctop: 100, fold: 2, n: 6, sigma: 0, hidden: new Set()
   };
   const PRESETS = {
-    protein:  { an: [[1e5, 1e-3], [1e5, 1e-2], [5e5, 5e-4]], onN: 1, ta: 300, td: 600, ctop: 100, fold: 2, n: 6 },
-    antibody: { an: [[5e5, 5e-5], [2e5, 2e-4], [1e6, 1e-5]], onN: 1, ta: 300, td: 1800, ctop: 50, fold: 2, n: 6 },
-    fragment: { an: [[1e5, 0.5], [2e4, 1], [2e5, 0.2]], onN: 1, ta: 60, td: 60, ctop: 100000, fold: 2, n: 8 },
-    samekd:   { an: [[1e6, 1e-2], [1e5, 1e-3], [1e4, 1e-4]], ta: 600, td: 1200, ctop: 100, fold: 2, n: 5 },
+    protein:  { an: [[1e5, 1e-3], [1e5, 1e-2]], onN: 1, ta: 300, td: 600, ctop: 100, fold: 2, n: 6 },
+    antibody: { an: [[5e5, 5e-5], [2e5, 2e-4]], onN: 1, ta: 300, td: 1800, ctop: 50, fold: 2, n: 6 },
+    fragment: { an: [[1e5, 0.5], [2e4, 1]], onN: 1, ta: 60, td: 60, ctop: 100000, fold: 2, n: 8 },
+    samekd:   { an: [[1e6, 1e-2], [1e4, 1e-4]], ta: 600, td: 1200, ctop: 100, fold: 2, n: 5 },
   };
 
   // ---------- formatting ----------
@@ -744,7 +743,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
       });
       h += `<button type="button" class="calcbtn" data-role="${r.role}" aria-label="Calculate ${r.key} from the other two"></button>`;
     });
-    h += `<span></span><span></span>` + [1, 2].map(i => `<button type="button" class="copya" data-copy="${i}" aria-label="Copy Analyte 1 constants into analyte ${i + 1}">Copy A1</button>`).join("") + `<span></span>`;
+    h += `<span></span><span></span>` + [1].map(i => `<button type="button" class="copya" data-copy="${i}" aria-label="Copy Analyte 1 constants into analyte ${i + 1}">Copy A1</button>`).join("") + `<span></span>`;
     $("rates").innerHTML = h + `</div>`;
   }
   function refreshRates() {
@@ -823,13 +822,14 @@ td.c { display: flex; align-items: center; gap: 8px; }
 
   function table() {
     const cs = concs(), A = active();
-    $("res-gen").innerHTML = S.n < 5 ? `<p class="gen"><b>Only ${S.n} concentration${S.n === 1 ? "" : "s"}.</b> Use at least 5 concentrations spanning the K<sub>D</sub> so a global fit can separate k<sub>a</sub> and k<sub>d</sub> reliably.</p>` : "";
+    $("res-gen").innerHTML = "";
+    const fewNote = S.n < 5 ? `<b>Only ${S.n} concentration${S.n === 1 ? "" : "s"}.</b> Use at least 5 concentrations spanning the K<sub>D</sub> so a global fit can separate k<sub>a</sub> and k<sub>d</sub> reliably.` : "";
     $("res-grid").innerHTML = A.map(a => {
       const K = KDof(a);
       const rows = cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { c, eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; });
       const body = rows.map(r => `<tr><td class="ca">${conc(r.c)}</td><td>${sci(r.c / K)}</td><td>${sci(r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td></tr>`).join("");
       // design notes for this analyte
-      const notes = [], top = rows[0];
+      const notes = fewNote ? [fewNote] : [], top = rows[0];
       const allSS = rows.every(r => r.pct >= 95), anyLow = rows.some(r => r.pct < 50);
       const lo = cs[cs.length - 1] / K, hi = cs[0] / K;
       if (hi < 3) notes.push(`<b>Top concentration is low.</b> The highest analyte concentration is only ${sci(hi)}× K<sub>D</sub>, so curves will not approach saturation. A series spanning roughly 0.1–10× K<sub>D</sub> gives the best constraint on the rates.`);
