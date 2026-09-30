@@ -172,6 +172,7 @@ tr.grp td .sw { margin-right: 6px; vertical-align: middle; }
 .tnote b { color: var(--fg); font-weight: 600; }
 .card .notes { margin-top: 0; max-width: none; display: grid; gap: 12px 32px; }
 @media (max-width: 860px) { .card .notes { grid-template-columns: minmax(0, 1fr) !important; } }
+.card .notes p.gen { grid-column: 1 / -1; }
 .ngroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ngroup h4 { margin: 0 0 2px; font: 600 13px var(--f-ui); text-transform: none; letter-spacing: 0; }
 .card .notes p { max-width: 90ch; margin: 0; }
@@ -267,6 +268,24 @@ td.c { display: flex; align-items: center; gap: 8px; }
 .arr b { font-weight: 400; font-size: 24px; line-height: 1; color: var(--accent); }
 .eqs { display: flex; flex-direction: column; gap: 4px; font: 13px var(--f-num); color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
 .eqs div { overflow-wrap: anywhere; }
+.results { display: flex; flex-direction: column; gap: 10px; }
+.res-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.res-head h2 { font-size: 1.05rem; margin: 0; }
+.res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; align-items: start; }
+.rcard { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; border-top: 4px solid var(--ac); }
+.rc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.rc-head h3 { margin: 0; font: 600 14px var(--f-ui); }
+.rc-stats { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12px; color: var(--muted); }
+.rc-stats b { font: 500 12.5px var(--f-num); color: var(--fg); margin-left: 3px; }
+.rcard .rtab { table-layout: auto; width: 100%; }
+.rcard .rtab th, .rcard .rtab td { padding: 6px 6px; }
+.rc-notes { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; color: var(--muted); font-size: 13px; }
+.rc-notes h4 { margin: 0 0 2px; font: 600 11px var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rc-notes p { margin: 0; }
+.rc-notes b { color: var(--fg); font-weight: 600; }
+@media (max-width: 520px) { .rcard { padding: 12px 10px; } .rcard .rtab th, .rcard .rtab td { padding: 5px 3px; } .rcard .rtab td { font-size: 11.5px; } .rcard .rtab th { font-size: 10px; letter-spacing: 0.02em; } }
+#res-gen p.gen { margin: 0; font-size: 13px; color: var(--muted); }
+#res-gen p.gen b { color: var(--fg); }
 .credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
 .credit p { margin: 0; }
 .credit b { color: var(--fg); font-weight: 600; }
@@ -402,22 +421,13 @@ td.c { display: flex; align-items: center; gap: 8px; }
   </div>
 
 
-  <div class="panel tablebox">
-    <div class="top">
-      <h2>Results Summary</h2>
+  <section class="results" aria-labelledby="res-h">
+    <div class="res-head">
+      <h2 id="res-h">Results Summary</h2>
+      <button class="btn" type="button" id="copy-res">Copy results table</button>
     </div>
-    <div class="scroll">
-      <table class="rtab">
-        <thead id="thead"></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <p class="hint tnote"><b>f<sub>eq</sub></b> = R<sub>eq</sub>/R<sub>max</sub>, fraction bound at equilibrium. <b>f<sub>end</sub></b> = R<sub>end</sub>/R<sub>max</sub>, fraction bound at the end of the association phase. <b>f<sub>end</sub>/f<sub>eq</sub></b> in red means steady state was not reached (under 95%).</p>
-  </div>
-
-  <section class="panel card" aria-labelledby="notes-h">
-    <h2 id="notes-h">Experiment design notes</h2>
-    <div class="notes" id="notes"></div>
+    <div id="res-gen"></div>
+    <div class="res-grid" id="res-grid"></div>
   </section>
 
   <article class="panel card" aria-labelledby="about-h">
@@ -463,12 +473,15 @@ td.c { display: flex; align-items: center; gap: 8px; }
         <li><b>K<sub>D</sub> (M)</b> — Equilibrium dissociation constant, k<sub>d</sub>/k<sub>a</sub>. The analyte concentration that occupies half the sites at equilibrium. Lower means tighter binding.</li>
         <li><b>Dissociation t½</b> — Time for half the complex to dissociate, ln 2 / k<sub>d</sub>.</li>
         <li><b>Residence time</b> — Average lifetime of a complex, 1/k<sub>d</sub>.</li>
-        <li><b>R (RU)</b> — Response. Proportional to the mass of analyte bound. SPR reports resonance units; BLI reports a wavelength shift in nm, which plays the same role.</li>
+        <li><b>R (RU)</b> — Response. Proportional to the mass of analyte bound: R = R<sub>max</sub>·f. SPR reports resonance units; BLI reports a wavelength shift in nm, which plays the same role.</li>
         <li><b>k<sub>obs</sub> (s⁻¹)</b> — Observed rate of the association curve, k<sub>a</sub>[A] + k<sub>d</sub>. It rises linearly with concentration.</li>
+        <li><b>f<sub>eq</sub></b> — R<sub>eq</sub>/R<sub>max</sub>: fraction bound at equilibrium. f<sub>eq</sub> = [A] / ([A] + K<sub>D</sub>).</li>
+        <li><b>f<sub>end</sub></b> — R<sub>end</sub>/R<sub>max</sub>: fraction bound at the end of the association phase. f<sub>end</sub> = f<sub>eq</sub>·(1 − e<sup>−k<sub>obs</sub>·t<sub>a</sub></sup>), where t<sub>a</sub> is the association time.</li>
+        <li><b>f<sub>end</sub>/f<sub>eq</sub> (%)</b> — How close each curve got to equilibrium. Values under 95%, shown in red, mean steady state was not reached.</li>
         <li><b>R<sub>eq</sub></b> — The response a curve would reach at equilibrium for a given concentration.</li>
         <li><b>Steady state</b> — The association phase has run long enough to reach equilibrium. Here, a curve counts as reached at 95% of R<sub>eq</sub>.</li>
         <li><b>Ligand (L)</b> — The binding partner immobilized on the sensor surface.</li>
-        <li><b>f</b> — Fraction of ligand sites occupied by analyte, from 0 to 1.</li>
+        <li><b>f</b> — Fraction of ligand sites occupied by analyte, from 0 to 1. f = [AL] / [L]<sub>T</sub>.</li>
         <li><b>Pseudo-first-order</b> — Analyte is in large excess, so binding does not deplete its concentration. The simulator assumes this.</li>
         <li><b>Mass transport limitation</b> — When analyte binds faster than diffusion can deliver it to the surface, slowing the apparent rates. Not modeled here.</li>
       </ul>
@@ -541,7 +554,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
       name: "1:1 (Langmuir)",
       desc: `The simplest interaction: one analyte molecule binds one independent, identical ligand site. Association is a single-exponential approach to equilibrium and dissociation is a single-exponential decay. It is the reference model for SPR and BLI analysis; curves that deviate from it point to heterogeneity, avidity, conformational change or mass transport.`,
       rx: [`A + L ${arr(k("a"), k("d"))} AL`],
-      eqs: [`d[AL]/dt = k<sub>a</sub>[A][L] − k<sub>d</sub>[AL]`, `K<sub>D</sub> = k<sub>d</sub> / k<sub>a</sub>`, `f = [AL] / [L]<sub>T</sub>`, `R = R<sub>max</sub>·f`],
+      eqs: [`d[AL]/dt = k<sub>a</sub>[A][L] − k<sub>d</sub>[AL]`, `K<sub>D</sub> = k<sub>d</sub> / k<sub>a</sub>`],
       how: `Both phases have exact solutions. During association f(t) = f<sub>eq</sub>(1 − e<sup>−k<sub>obs</sub>t</sup>), with k<sub>obs</sub> = k<sub>a</sub>[A] + k<sub>d</sub> and f<sub>eq</sub> = [A]/([A] + K<sub>D</sub>). During dissociation, f decays as e<sup>−k<sub>d</sub>(t − t<sub>a</sub>)</sup> from its value at the end of association, and R = R<sub>max</sub>·f.`,
       assume: `<b>One kind of site.</b> Every ligand site is identical and independent.`,
     },
@@ -809,35 +822,31 @@ td.c { display: flex; align-items: center; gap: 8px; }
   }
 
   function table() {
-    const cs = concs(), A = active(), multi = A.length > 1;
-    const sub = `<th class="gs"><span class="sym">[A]/K<sub>D</sub></span></th><th><span class="sym">k<sub>obs</sub></span> (s⁻¹)</th><th><span class="sym">f<sub>eq</sub></span></th><th><span class="sym">f<sub>end</sub></span></th><th><span class="sym">f<sub>end</sub>/f<sub>eq</sub> (%)</span></th>`;
-    $("thead").innerHTML = `<tr><th rowspan="2" class="ca">[A]</th>` + A.map(a => { const K = KDof(a);
-      return `<th colspan="5" class="gh" style="--ac:${keyColor(a.i)}"><span class="gname">${esc(a.name)}</span><span class="gstat">K<sub>D</sub> <b>${conc(K)}</b></span><span class="gstat">t½ <b>${dur(Math.LN2 / a.kd)}</b></span><span class="gstat">Residence <b>${dur(1 / a.kd)}</b></span></th>`; }).join("") +
-      `</tr><tr>` + A.map(() => sub).join("") + `</tr>`;
-    const R = A.map(a => cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; }));
-    $("tbody").innerHTML = cs.map((c, q) => `<tr><td class="ca">${conc(c)}</td>` + A.map((a, j) => { const r = R[j][q];
-      return `<td class="gs">${sci(c / KDof(a))}</td><td>${sci(r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td>`; }).join("") + `</tr>`).join("");
-
-    const groups = [];
-    A.forEach((a, j) => {
-      const notes = [];
-      const K = KDof(a), rows = R[j], top = rows[0];
+    const cs = concs(), A = active();
+    $("res-gen").innerHTML = S.n < 5 ? `<p class="gen"><b>Only ${S.n} concentration${S.n === 1 ? "" : "s"}.</b> Use at least 5 concentrations spanning the K<sub>D</sub> so a global fit can separate k<sub>a</sub> and k<sub>d</sub> reliably.</p>` : "";
+    $("res-grid").innerHTML = A.map(a => {
+      const K = KDof(a);
+      const rows = cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { c, eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; });
+      const body = rows.map(r => `<tr><td class="ca">${conc(r.c)}</td><td>${sci(r.c / K)}</td><td>${sci(r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td></tr>`).join("");
+      // design notes for this analyte
+      const notes = [], top = rows[0];
       const allSS = rows.every(r => r.pct >= 95), anyLow = rows.some(r => r.pct < 50);
-      const pre = "";
       const lo = cs[cs.length - 1] / K, hi = cs[0] / K;
-      if (hi < 3) notes.push(pre + `<b>Top concentration is low.</b> The highest analyte concentration is only ${sci(hi)}× K<sub>D</sub>, so curves will not approach saturation. A series spanning roughly 0.1–10× K<sub>D</sub> gives the best constraint on the rates.`);
-      else if (lo > 1) notes.push(pre + `<b>All concentrations are above K<sub>D</sub>.</b> Add lower concentrations (down to ~0.1× K<sub>D</sub>) so the association rate varies enough across the series to separate the rate constants.`);
-      else notes.push(pre + `<b>Concentration range looks reasonable</b> at ${sci(lo)}–${sci(hi)}× K<sub>D</sub>.`);
+      if (hi < 3) notes.push(`<b>Top concentration is low.</b> The highest analyte concentration is only ${sci(hi)}× K<sub>D</sub>, so curves will not approach saturation. A series spanning roughly 0.1–10× K<sub>D</sub> gives the best constraint on the rates.`);
+      else if (lo > 1) notes.push(`<b>All concentrations are above K<sub>D</sub>.</b> Add lower concentrations (down to ~0.1× K<sub>D</sub>) so the association rate varies enough across the series to separate the rate constants.`);
+      else notes.push(`<b>Concentration range looks reasonable</b> at ${sci(lo)}–${sci(hi)}× K<sub>D</sub>.`);
       const dFrac = top.end > 0 ? 1 - top.dEnd / top.end : 0;
-      if (dFrac < 0.05) notes.push(pre + `<b>Very little dissociation is observed.</b> Only ${(dFrac * 100).toFixed(1)}% of complex decays in ${dur(S.td)}. For k<sub>d</sub> = ${sciPretty(a.kd)} s⁻¹ you would need about ${dur(0.05 / a.kd)} to see 5% decay; tight binders often need long dissociation phases for a reliable k<sub>d</sub>.`);
-      else notes.push(pre + `<b>${(dFrac * 100).toFixed(0)}% of the top-concentration signal dissociates</b> during the ${dur(S.td)} dissociation phase.`);
-      if (!allSS) notes.push(pre + (anyLow
+      if (dFrac < 0.05) notes.push(`<b>Very little dissociation is observed.</b> Only ${(dFrac * 100).toFixed(1)}% of complex decays in ${dur(S.td)}. For k<sub>d</sub> = ${sciPretty(a.kd)} s⁻¹ you would need about ${dur(0.05 / a.kd)} to see 5% decay; tight binders often need long dissociation phases for a reliable k<sub>d</sub>.`);
+      else notes.push(`<b>${(dFrac * 100).toFixed(0)}% of the top-concentration signal dissociates</b> during the ${dur(S.td)} dissociation phase.`);
+      if (!allSS) notes.push(anyLow
         ? `<b>Low concentrations are far from equilibrium.</b> Steady-state (equilibrium) analysis of these curves would underestimate R<sub>eq</sub> and bias K<sub>D</sub> upward; rely on the kinetic fit or lengthen the association phase.`
-        : `<b>Some curves stop short of equilibrium.</b> Lengthen the association phase if you plan a steady-state analysis.`));
-      groups.push(`<div class="ngroup">${multi ? `<h4 style="color:${keyColor(a.i)}">${esc(a.name)}</h4>` : ""}${notes.map(n => `<p>${n}</p>`).join("")}</div>`);
-    });
-    $("notes").innerHTML = groups.join("");
-    $("notes").style.gridTemplateColumns = `repeat(${A.length}, minmax(0, 1fr))`;
+        : `<b>Some curves stop short of equilibrium.</b> Lengthen the association phase if you plan a steady-state analysis.`);
+      return `<article class="panel rcard" style="--ac:${keyColor(a.i)}">
+        <header class="rc-head"><h3>${esc(a.name)}</h3><div class="rc-stats"><span>K<sub>D</sub> <b>${conc(K)}</b></span><span>t½ <b>${dur(Math.LN2 / a.kd)}</b></span><span>Residence <b>${dur(1 / a.kd)}</b></span></div></header>
+        <div class="scroll"><table class="rtab"><thead><tr><th class="ca">[A]</th><th><span class="sym">[A]/K<sub>D</sub></span></th><th><span class="sym">k<sub>obs</sub></span> <span class="sym">(s⁻¹)</span></th><th><span class="sym">f<sub>eq</sub></span></th><th><span class="sym">f<sub>end</sub></span></th><th><span class="sym">f<sub>end</sub>/f<sub>eq</sub> (%)</span></th></tr></thead><tbody>${body}</tbody></table></div>
+        <div class="rc-notes"><h4>Experiment design notes</h4>${notes.map(n => `<p>${n}</p>`).join("")}</div>
+      </article>`;
+    }).join("");
   }
 
   // ---------- shared inputs ----------
@@ -939,6 +948,30 @@ td.c { display: flex; align-items: center; gap: 8px; }
     times.forEach((t, j) => { out += t + "\t" + cols.map(col => col[j].toPrecision(6)).join("\t") + "\n"; });
     return out;
   }
+  function buildResultsTSV() {
+    const cs = concs(), A = active();
+    const num = v => +v.toPrecision(4);
+    let r1 = [""], r2 = ["[A] (nM)"];
+    A.forEach(a => {
+      r1.push(`${a.name} (KD ${conc(KDof(a))}, t½ ${dur(Math.LN2 / a.kd)}, residence ${dur(1 / a.kd)})`, "", "", "", "");
+      r2.push("[A]/KD", "kobs (s-1)", "f_eq", "f_end", "f_end/f_eq (%)");
+    });
+    const rows = [r1, r2];
+    cs.forEach(c => {
+      const row = [num(c)];
+      A.forEach(a => {
+        const eq = feq(a, c), [end] = simulate(a, c, [S.ta]);
+        row.push(num(c / KDof(a)), num(a.ka * c * 1e-9 + a.kd), eq.toFixed(4), end.toFixed(4), (eq > 0 ? 100 * end / eq : 0).toFixed(1));
+      });
+      rows.push(row);
+    });
+    return rows.map(r => r.join("\t")).join("\n") + "\n";
+  }
+  $("copy-res").addEventListener("click", async () => {
+    const btn = $("copy-res");
+    try { await navigator.clipboard.writeText(buildResultsTSV()); flash(btn, "Copied", "Copy results table"); }
+    catch { flash(btn, "Copy blocked by browser", "Copy results table"); }
+  });
   const flash = (btn, msg, rest) => { btn.textContent = msg; setTimeout(() => btn.textContent = rest, 2000); };
   $("copy").addEventListener("click", async () => {
     const btn = $("copy");
