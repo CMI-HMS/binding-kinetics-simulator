@@ -1,0 +1,1 @@
+Interactive simulator for teaching binding kinetics and modeling surface-based kinetic binding experiments, such as Surface Plasmon Resonance or Biolayer Interferometry. Made for the Center for Macromolecular Interactions (CMI) at Harvard Medical School.
