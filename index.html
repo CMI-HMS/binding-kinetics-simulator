@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>1:1 Binding Kinetics Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: instrument panel — controls rail on the left, sensorgram + readouts on the right; stacks on phones */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --fg: #16202a;
+  --muted: #5b6875;
+  --line: #dfe4ea;
+  --grid: #e9edf1;
+  --accent: #4d4a52;
+  --accent-soft: #ebe8ea;
+  --assoc: rgba(90,85,95,0.05);
+  --dissoc: transparent;
+  --warn: #a8570b;
+  --warn-soft: #fbeedd;
+  --ok: #2b7a3e;
+  --bad: #9e150b;
+  --ramp-l: 44;
+  --ramp-s: 62;
+  --f-ui: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-num: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1419; --surface: #161d24; --fg: #e3e9ef; --muted: #93a1ae; --line: #27313b; --grid: #1f2830;
+    --accent: #cfcbd2; --accent-soft: #2a2d33; --assoc: rgba(200,195,210,0.05); --dissoc: transparent;
+    --warn: #f0a55a; --warn-soft: #3a2a17; --ok: #6cc983; --bad: #f07b70; --ramp-l: 66; --ramp-s: 60; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1419; --surface: #161d24; --fg: #e3e9ef; --muted: #93a1ae; --line: #27313b; --grid: #1f2830;
+  --accent: #cfcbd2; --accent-soft: #2a2d33; --assoc: rgba(200,195,210,0.05); --dissoc: transparent;
+  --warn: #f0a55a; --warn-soft: #3a2a17; --ok: #6cc983; --bad: #f07b70; --ramp-l: 66; --ramp-s: 60; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 14px 40px; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; font-size: 1rem; }
+.model { font-family: var(--f-num); font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.layout { display: grid; grid-template-columns: 372px minmax(0, 1fr); gap: 14px; align-items: stretch; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.controls { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.group + .group { border-top: 1px solid var(--line); padding-top: 9px; }
+.fields { display: flex; flex-direction: column; gap: 5px; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { font: 500 12px var(--f-ui); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.presets button:hover { border-color: var(--accent); color: var(--accent); }
+.presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.field { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.field label { font-weight: 500; }
+.field label .u { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.field input[type="text"], .field input[type="number"] {
+  width: 104px; font: 13px var(--f-num); color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; text-align: right; font-variant-numeric: tabular-nums;
+}
+.field input.bad { border-color: var(--warn); }
+.field input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+.field .hint { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2 .field { grid-template-columns: 1fr; gap: 3px; }
+.row2 .field input[type="number"], .row2 .field input[type="text"] { width: 100%; }
+.spin { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); overflow: hidden; }
+.spin button { flex: none; width: 32px; border: 0; background: transparent; color: var(--accent); font: 600 16px var(--f-ui); cursor: pointer; }
+.spin button:hover { background: var(--accent-soft); }
+.spin button:disabled { color: var(--muted); opacity: 0.4; cursor: default; background: transparent; }
+.row2 .field .spin input[type="number"], .row2 .field .spin input[type="text"] { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; -moz-appearance: textfield; appearance: textfield; }
+.spin input::-webkit-inner-spin-button, .spin input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.hint { font-size: 12px; color: var(--muted); }
+.sect { font: 600 11px var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg); margin: 0 0 2px; }
+.field.inline { grid-template-columns: 110px minmax(0, 1fr) 80px 12px; gap: 8px; }
+.field.inline > .calcbtn, .field.inline > .calcpad { grid-column: 4; grid-row: 1; }
+.field.inline label { white-space: nowrap; }
+.ex-l { margin-left: 8px; }
+.modelpick { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.field input[type="text"], .field input[type="number"] { padding-block: 4px; }
+.field.inline .lab { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.field.inline label { line-height: 1.15; }
+.calcbtn, .calcpad { flex: none; width: 12px; height: 12px; border-radius: 50%; padding: 0; }
+.calcbtn { border: 1.5px solid var(--muted); background: transparent; cursor: pointer; opacity: 0.6; }
+.calcbtn:hover { opacity: 1; border-color: var(--accent); }
+.calcbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); opacity: 1; cursor: default; }
+.field.inline.step-start { margin-top: 3px; }
+.kgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; }
+.kcol { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.kcol-h { margin: 0; font: 600 11px var(--f-ui); color: var(--accent); }
+.kcell { display: grid; grid-template-columns: 40px minmax(0, 1fr) 12px; align-items: center; gap: 5px; }
+.kcell.wide { grid-template-columns: auto minmax(0, 150px) 12px; justify-content: start; margin-top: 4px; }
+.klab label { display: block; line-height: 1.1; font-weight: 500; }
+.klab label > span { display: block; }
+.klab .u { color: var(--muted); font-size: 10px; font-weight: 400; margin-top: 1px; white-space: nowrap; }
+.kcell .spin button { width: 20px; height: 26px; font-size: 14px; }
+.kcell .spin:has(input.calc) button { display: none; }
+.kcell .spin input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 11.5px var(--f-num); padding: 0 2px; color: var(--fg); height: 26px; }
+.kcell .spin input.calc { background: var(--accent-soft); color: var(--accent); }
+.kcell .spin:has(input.calc) { border-style: dashed; border-color: var(--accent); }
+.field input.calc { background: var(--accent-soft); border-style: dashed; border-color: var(--accent); color: var(--accent); cursor: default; }
+.field input[type="range"]:disabled { opacity: 0.45; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.row3 .field { grid-template-columns: 1fr; gap: 3px; }
+.row3 .field label .u { margin-left: 4px; }
+.row3 .spin input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 12.5px var(--f-num); color: var(--fg); padding: 0; }
+.row3 .spin button { width: 26px; }
+.agrid { display: grid; grid-template-columns: 44px repeat(3, minmax(0, 1fr)) 12px; gap: 5px 5px; align-items: center; }
+.ahead { display: flex; align-items: center; gap: 2px; min-width: 0; border-bottom: 3px solid var(--ac); padding-bottom: 3px; }
+.ahead input[type="checkbox"] { margin: 0; width: 13px; height: 13px; accent-color: var(--ac); flex: none; }
+.ahead .aname { min-width: 0; width: 100%; font: 600 11.5px var(--f-ui); text-overflow: ellipsis; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 2px 1px; }
+.ahead .aname:hover, .ahead .aname:focus { border-color: var(--line); background: var(--bg); }
+.ahead.off { opacity: 0.5; }
+.rlab { font-weight: 500; line-height: 1.1; }
+.rlab .u { display: block; color: var(--muted); font-size: 10px; font-weight: 400; white-space: nowrap; }
+.copya { font: 500 11px var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 5px; padding: 3px 0; cursor: pointer; }
+.copya:hover { border-color: var(--accent); }
+.acell button { width: 18px; height: 26px; font-size: 13px; }
+.acell input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 11.5px var(--f-num); padding: 0 1px; color: var(--fg); height: 26px; }
+.acell.off { opacity: 0.4; }
+.acell.is-calc { border-style: dashed; border-color: var(--accent); background: var(--accent-soft); }
+.acell.is-calc input { color: var(--accent); }
+.acell.is-calc button { visibility: hidden; }
+.legend { flex-direction: column; gap: 2px; }
+.lg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; }
+.lg-name { font: 600 12px var(--f-ui); min-width: 72px; }
+.stat .v.multi { display: flex; flex-direction: column; gap: 1px; font-size: 0.85rem; }
+.vl { display: flex; align-items: center; gap: 6px; }
+.tip .ta { font: 600 11px var(--f-ui); color: var(--muted); margin-top: 4px; }
+tr.grp td { text-align: left; font: 600 12px var(--f-ui); padding-top: 12px; border-bottom: 1px solid var(--line); }
+tr.grp td .sw { margin-right: 6px; vertical-align: middle; }
+.grp-in { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+.gname { font: 600 13px var(--f-ui); color: var(--fg); display: inline-flex; align-items: center; }
+.gstat { font: 400 12px var(--f-ui); color: var(--muted); }
+.gstat b { font: 500 13px var(--f-num); color: var(--fg); margin-left: 4px; }
+.nt { font-weight: 600; }
+.calc-note { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: auto; }
+.eyebrow:has(.calc-note) { display: flex; align-items: baseline; }
+.field.inline label .u { margin-left: 3px; font-size: 11px; }
+.field.inline input[type="range"] { grid-column: 2; grid-row: 1; }
+.field.inline input[type="text"], .field.inline input[type="number"] { grid-column: 3; grid-row: 1; width: 100%; }
+.row2 .field label .u { margin-left: 4px; }
+.spin button { height: 28px; }
+.examples { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.explain { display: flex; flex-direction: column; gap: 14px; }
+.rtab th.gh { text-align: left; border-bottom: 3px solid var(--ac); padding: 8px 6px 5px 12px; text-transform: none; letter-spacing: 0; }
+.rtab { table-layout: fixed; max-width: 100%; }
+.rtab th.ca { width: 84px; }
+.rtab th.gh .gname { display: block; font: 600 13px var(--f-ui); color: var(--fg); margin-bottom: 2px; }
+.rtab th.gh .gstat { font: 400 12px var(--f-ui); color: var(--muted); margin-right: 12px; white-space: nowrap; }
+.rtab th.gh .gstat b { font: 500 12.5px var(--f-num); color: var(--fg); margin-left: 3px; }
+.rtab .gs, .rtab th.gh { border-left: 1px solid var(--line); }
+.rtab .gs { padding-left: 12px; }
+.rtab th.ca, .rtab td.ca { text-align: left; }
+.rtab td.warn { color: var(--bad); font-weight: 600; }
+.rtab td.ok { color: var(--ok); }
+.tnote { margin: 8px 0 0; }
+.tnote b { color: var(--fg); font-weight: 600; }
+.card .notes { margin-top: 0; max-width: none; display: grid; gap: 12px 32px; }
+@media (max-width: 860px) { .card .notes { grid-template-columns: minmax(0, 1fr) !important; } }
+.ngroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ngroup h4 { margin: 0 0 2px; font: 600 13px var(--f-ui); text-transform: none; letter-spacing: 0; }
+.card .notes p { max-width: 90ch; margin: 0; }
+.results-row .about-cols { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (max-width: 1100px) and (min-width: 861px) { .results-row .about-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .results-row { grid-template-columns: minmax(0, 1fr); } }
+.results-row .about-grid { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) and (min-width: 861px) { .results-row .about-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.about-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 28px; align-items: start; }
+@media (max-width: 860px) { .about-grid { grid-template-columns: minmax(0, 1fr); } }
+.about-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.card h2 { font-size: 1.05rem; margin: 0; }
+.card p { margin: 0; max-width: 70ch; }
+.model-name { font-weight: 600; color: var(--accent); }
+.card .foot { margin: 0; }
+.card h4 { font: 600 12.5px var(--f-ui); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 40px; }
+.about-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 36px; align-items: start; }
+@media (max-width: 1100px) { .about-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.about-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.about-col h4 { margin-top: 2px; }
+.about-col > div > p { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; }
+.about-col > div > p:last-child { margin-bottom: 0; }
+.about-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 40px; align-items: start; }
+@media (max-width: 860px) { .about-cols, .split, .about-top { grid-template-columns: minmax(0, 1fr); } }
+.split p { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; }
+.split p:last-child { margin-bottom: 0; }
+.card ul { margin: 0; padding-left: 17px; color: var(--muted); font-size: 13.5px; }
+.card li { margin-bottom: 6px; }
+.card li:last-child { margin-bottom: 0; }
+.card li b { color: var(--fg); font-weight: 600; }
+.terms { columns: 3 300px; column-gap: 36px; }
+.terms li { break-inside: avoid; }
+.toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat .k + .v + .k { margin-top: 2px; }
+.stat { background: var(--surface); padding: 8px 12px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font: 500 0.92rem var(--f-num); font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.chartbox { padding: 10px 14px 8px; }
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.chart-head h2 { font-size: 1rem; margin: 0; }
+.readout { font: 12px var(--f-num); color: var(--muted); min-height: 1.4em; }
+#chart { position: relative; }
+#chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 12px var(--f-num); box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tip .t { color: var(--muted); margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .r span:first-child { display: flex; align-items: center; gap: 6px; }
+.sw { width: 10px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font: 12px var(--f-num); }
+.legend button { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 3px 0; color: var(--fg); font: inherit; cursor: pointer; }
+.legend button.off { opacity: 0.35; }
+
+.tablebox { padding: 14px; }
+.tablebox .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.tablebox h2 { font-size: 1rem; margin: 0; }
+.btn { font: 500 12px var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { white-space: normal; vertical-align: bottom; line-height: 1.25; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td { font: 13px var(--f-num); }
+.sym { text-transform: none; letter-spacing: 0; font-size: 12px; }
+th:first-child, td:first-child { text-align: left; }
+td.c { display: flex; align-items: center; gap: 8px; }
+.pill { display: inline-block; font: 600 11px var(--f-ui); padding: 2px 7px; border-radius: 999px; }
+.pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.pill.warn { color: var(--warn); background: var(--warn-soft); }
+.notes { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; max-width: 80ch; }
+.notes p { margin: 0; }
+.notes b { color: var(--fg); font-weight: 600; }
+.foot { color: var(--muted); font-size: 12px; margin-top: 4px; max-width: 80ch; }
+.foot code { font-family: var(--f-num); }
+.selwrap { position: relative; }
+.selwrap::after { content: ""; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+#models { width: 250px; max-width: 100%; appearance: none; -webkit-appearance: none; font: 500 13px var(--f-ui); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 30px 6px 10px; cursor: pointer; }
+#models:hover { border-color: var(--accent); }
+.eqbox { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rxs { display: flex; flex-direction: column; gap: 6px; }
+.rx { font: 500 15px var(--f-num); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+.arr { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; margin: 0 6px; }
+.arr i { font-style: normal; font-size: 10px; color: var(--muted); }
+.arr b { font-weight: 400; font-size: 24px; line-height: 1; color: var(--accent); }
+.eqs { display: flex; flex-direction: column; gap: 4px; font: 13px var(--f-num); color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.eqs div { overflow-wrap: anywhere; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } h1 { font-size: 1.35rem; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>1:1 Binding Kinetics Simulator</h1>
+    <p class="sub">Choose an example or build your own kinetic binding experiment.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="panel controls" aria-label="Simulation settings">
+      <div class="group">
+        <h2 class="sect">Experimental parameters</h2>
+        <p class="eyebrow">Binding constants <span class="calc-note">● = calculated</span></p>
+        <div class="fields" id="rates"></div>
+      </div>
+
+      <div class="group">
+        <p class="eyebrow">Phase durations</p>
+        <div class="row3">
+          <div class="field">
+            <label for="ta-t">Association<span class="u">s</span></label>
+            <div class="spin">
+              <button type="button" data-for="ta-t" data-d="-1" aria-label="Shorten association">−</button>
+              <input id="ta-t" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="ta-t" data-d="1" aria-label="Lengthen association">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="td-t">Dissociation<span class="u">s</span></label>
+            <div class="spin">
+              <button type="button" data-for="td-t" data-d="-1" aria-label="Shorten dissociation">−</button>
+              <input id="td-t" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="td-t" data-d="1" aria-label="Lengthen dissociation">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tb-t">Baseline<span class="u">s</span></label>
+            <div class="spin">
+              <button type="button" data-for="tb-t" data-d="-1" aria-label="Shorten baseline">−</button>
+              <input id="tb-t" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="tb-t" data-d="1" aria-label="Lengthen baseline">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="eyebrow">Analyte series</p>
+        <div class="fields">
+          <div class="row3">
+            <div class="field">
+              <label for="ctop">Top conc.<span class="u">nM</span></label>
+              <div class="spin">
+                <button type="button" data-for="ctop" data-d="-1" aria-label="Lower top concentration">−</button>
+                <input id="ctop" type="text" inputmode="decimal" spellcheck="false">
+                <button type="button" data-for="ctop" data-d="1" aria-label="Raise top concentration">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="fold">Dilution<span class="u">fold</span></label>
+              <div class="spin">
+                <button type="button" data-for="fold" data-d="-1" aria-label="Decrease dilution fold">−</button>
+                <input id="fold" type="text" inputmode="decimal" spellcheck="false">
+                <button type="button" data-for="fold" data-d="1" aria-label="Increase dilution fold">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="n-t">Concentrations</label>
+              <div class="spin">
+                <button type="button" data-for="n-t" data-d="-1" aria-label="Fewer concentrations">−</button>
+                <input id="n-t" type="text" inputmode="numeric" spellcheck="false">
+                <button type="button" data-for="n-t" data-d="1" aria-label="More concentrations">+</button>
+              </div>
+            </div>
+          </div>
+          <span class="hint" id="range-hint"></span>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="eyebrow">Surface and noise</p>
+        <div class="row2">
+          <div class="field">
+            <label for="rmax">R<sub>max</sub><span class="u">RU</span></label>
+            <div class="spin">
+              <button type="button" data-for="rmax" data-d="-1" aria-label="Decrease Rmax">−</button>
+              <input id="rmax" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="rmax" data-d="1" aria-label="Increase Rmax">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="sigma">Noise σ<span class="u">RU, 0 = none</span></label>
+            <div class="spin">
+              <button type="button" data-for="sigma" data-d="-1" aria-label="Decrease noise">−</button>
+              <input id="sigma" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="sigma" data-d="1" aria-label="Increase noise">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="examples">
+        <span class="eyebrow">Examples</span>
+        <div class="presets" id="presets">
+          <button type="button" data-p="protein">Protein–protein</button>
+          <button type="button" data-p="antibody">Antibody, high affinity</button>
+          <button type="button" data-p="fragment">Weak small molecule</button>
+          <button type="button" data-p="samekd">Same K<sub>D</sub>, different kinetics</button>
+        </div>
+      </div>
+
+
+      <div class="panel chartbox">
+        <div class="chart-head">
+          <h2>Sensorgram</h2>
+          <div class="actions">
+            <div class="readout" id="readout">Hover over the plot to read values</div>
+            <button class="btn" type="button" id="copy">Copy simulated data</button>
+          </div>
+        </div>
+        <div id="chart"></div>
+      </div>
+    </section>
+  </div>
+
+
+  <div class="panel tablebox">
+    <div class="top">
+      <h2>Results Summary</h2>
+    </div>
+    <div class="scroll">
+      <table class="rtab">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="hint tnote"><b>f<sub>eq</sub></b> = R<sub>eq</sub>/R<sub>max</sub>, fraction bound at equilibrium. <b>f<sub>end</sub></b> = R<sub>end</sub>/R<sub>max</sub>, fraction bound at the end of the association phase. <b>f<sub>end</sub>/f<sub>eq</sub></b> in red means steady state was not reached (under 95%).</p>
+  </div>
+
+  <section class="panel card" aria-labelledby="notes-h">
+    <h2 id="notes-h">Experiment design notes</h2>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <article class="panel card" aria-labelledby="about-h">
+    <h2 id="about-h">About this simulation</h2>
+    <div class="about-cols">
+      <div class="about-col">
+        <p>This tool simulates a surface-based kinetic binding experiment, such as Surface Plasmon Resonance or Biolayer Interferometry. Each analyte binds one independent, identical ligand site (1:1, Langmuir).</p>
+        <div class="eqbox" id="eqbox" aria-live="polite"></div>
+      </div>
+      <div class="about-col">
+        <div>
+          <h4>How it works</h4>
+          <p>Curves are calculated exactly from the 1:1 rate equation for every concentration in the series, through baseline, association and dissociation. Each analyte has its own k<sub>a</sub> and k<sub>d</sub>; all share the surface, timing and series.</p>
+        </div>
+        <div>
+          <h4>What it assumes</h4>
+          <ul class="assume">
+            <li><b>Identical, independent ligand sites.</b></li>
+            <li><b>Constant analyte concentration</b> (pseudo-first-order).</li>
+            <li><b>No mass transport limitation.</b></li>
+            <li><b>Ideal injections and a flat, drift-free baseline.</b></li>
+            <li><b>Full regeneration</b> between concentrations.</li>
+            <li><b>Gaussian noise</b> of constant σ.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <div class="explain">
+    <article class="panel card" aria-labelledby="terms-h">
+      <h2 id="terms-h">Key terms</h2>
+      <ul class="terms">
+        <li><b>k<sub>a</sub> (M⁻¹s⁻¹)</b> — Association rate constant: how fast analyte binds free ligand at a given concentration.</li>
+        <li><b>k<sub>d</sub> (s⁻¹)</b> — Dissociation rate constant: the fraction of complex that falls apart per second.</li>
+        <li><b>Association phase</b> — Analyte is present at a constant concentration and complex builds up.</li>
+        <li><b>Dissociation phase</b> — Analyte is replaced by buffer and bound complex decays.</li>
+        <li><b>Baseline</b> — Buffer only, before analyte is added. Response stays at zero.</li>
+        <li><b>Analyte (A)</b> — The binding partner in solution, flowed over the sensor (SPR) or into which the sensor is dipped (BLI).</li>
+        <li><b>Dilution series</b> — The set of analyte concentrations, made by serial dilution of the top concentration by the fold factor.</li>
+        <li><b>R<sub>max</sub> (RU)</b> — Response when every ligand site is occupied. Depends on how much ligand is immobilized.</li>
+        <li><b>Noise σ</b> — Standard deviation of random Gaussian noise added to each simulated point.</li>
+        <li><b>K<sub>D</sub> (M)</b> — Equilibrium dissociation constant, k<sub>d</sub>/k<sub>a</sub>. The analyte concentration that occupies half the sites at equilibrium. Lower means tighter binding.</li>
+        <li><b>Dissociation t½</b> — Time for half the complex to dissociate, ln 2 / k<sub>d</sub>.</li>
+        <li><b>Residence time</b> — Average lifetime of a complex, 1/k<sub>d</sub>.</li>
+        <li><b>R (RU)</b> — Response. Proportional to the mass of analyte bound. SPR reports resonance units; BLI reports a wavelength shift in nm, which plays the same role.</li>
+        <li><b>k<sub>obs</sub> (s⁻¹)</b> — Observed rate of the association curve, k<sub>a</sub>[A] + k<sub>d</sub>. It rises linearly with concentration.</li>
+        <li><b>R<sub>eq</sub></b> — The response a curve would reach at equilibrium for a given concentration.</li>
+        <li><b>Steady state</b> — The association phase has run long enough to reach equilibrium. Here, a curve counts as reached at 95% of R<sub>eq</sub>.</li>
+        <li><b>Ligand (L)</b> — The binding partner immobilized on the sensor surface.</li>
+        <li><b>f</b> — Fraction of ligand sites occupied by analyte, from 0 to 1.</li>
+        <li><b>Pseudo-first-order</b> — Analyte is in large excess, so binding does not deplete its concentration. The simulator assumes this.</li>
+        <li><b>Mass transport limitation</b> — When analyte binds faster than diffusion can deliver it to the surface, slowing the apparent rates. Not modeled here.</li>
+      </ul>
+    </article>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const HUES = [218, 24, 152];   // one hue per analyte: blue, orange, green
+  const S = {
+    an: [
+      { name: "Analyte 1", on: true,  ka: 1e5, kd: 1e-3, KD: 10 },
+      { name: "Analyte 2", on: false, ka: 1e5, kd: 1e-2, KD: 100 },
+      { name: "Analyte 3", on: false, ka: 5e5, kd: 5e-4, KD: 1 },
+    ],
+    calc: "K",                          // which of ka, kd, KD is calculated, for every analyte
+    rmax: 10, ta: 300, td: 600, tb: 60, ctop: 100, fold: 2, n: 6, sigma: 0, hidden: new Set()
+  };
+  const PRESETS = {
+    protein:  { an: [[1e5, 1e-3], [1e5, 1e-2], [5e5, 5e-4]], onN: 1, ta: 300, td: 600, ctop: 100, fold: 2, n: 6 },
+    antibody: { an: [[5e5, 5e-5], [2e5, 2e-4], [1e6, 1e-5]], onN: 1, ta: 300, td: 1800, ctop: 50, fold: 2, n: 6 },
+    fragment: { an: [[1e5, 0.5], [2e4, 1], [2e5, 0.2]], onN: 1, ta: 60, td: 60, ctop: 100000, fold: 2, n: 8 },
+    samekd:   { an: [[1e6, 1e-2], [1e5, 1e-3], [1e4, 1e-4]], ta: 600, td: 1200, ctop: 100, fold: 2, n: 5 },
+  };
+
+  // ---------- formatting ----------
+  const sci = v => {
+    if (!isFinite(v)) return "–";
+    if (v === 0) return "0";
+    const e = Math.floor(Math.log10(Math.abs(v)));
+    if (e >= -2 && e <= 3) return +v.toPrecision(3) + "";
+    const m = v / Math.pow(10, e);
+    return (+m.toFixed(2)) + "e" + e;
+  };
+  const sup = n => String(n).replace(/-/g, "⁻").replace(/\d/g, d => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]);
+  const sciPretty = v => {
+    if (!isFinite(v) || v <= 0) return "–";
+    const e = Math.floor(Math.log10(v));
+    if (e >= -2 && e <= 3) return +v.toPrecision(3) + "";
+    const m = +(v / Math.pow(10, e)).toFixed(2);
+    return (m === 1 ? "" : m + "×") + "10" + sup(e);
+  };
+  const conc = nM => {
+    const units = [["mM", 1e6], ["µM", 1e3], ["nM", 1], ["pM", 1e-3], ["fM", 1e-6]];
+    for (const [u, f] of units) if (nM >= f * 0.9995) return (+(nM / f).toPrecision(3)) + " " + u;
+    return (+(nM / 1e-6).toPrecision(3)) + " fM";
+  };
+  const dur = s => {
+    if (!isFinite(s)) return "–";
+    if (s < 60) return (+s.toPrecision(3)) + " s";
+    if (s < 3600) return (+(s / 60).toPrecision(3)) + " min";
+    if (s < 86400 * 2) return (+(s / 3600).toPrecision(3)) + " h";
+    return (+(s / 86400).toPrecision(3)) + " d";
+  };
+  const parseNum = str => {
+    const v = parseFloat(String(str).trim().replace(/[×x]\s*10\^?/i, "e").replace(/,/g, ""));
+    return isFinite(v) ? v : NaN;
+  };
+
+  // ---------- models ----------
+  const k = (a, n) => `k<sub>${a}${n ?? ""}</sub>`;
+  const arr = (f, r) => `<span class="arr"><i>${f}</i><b>⇌</b><i>${r}</i></span>`;
+  const MODELS = {
+    one: {
+      name: "1:1 (Langmuir)",
+      desc: `The simplest interaction: one analyte molecule binds one independent, identical ligand site. Association is a single-exponential approach to equilibrium and dissociation is a single-exponential decay. It is the reference model for SPR and BLI analysis; curves that deviate from it point to heterogeneity, avidity, conformational change or mass transport.`,
+      rx: [`A + L ${arr(k("a"), k("d"))} AL`],
+      eqs: [`d[AL]/dt = k<sub>a</sub>[A][L] − k<sub>d</sub>[AL]`, `K<sub>D</sub> = k<sub>d</sub> / k<sub>a</sub>`, `f = [AL] / [L]<sub>T</sub>`, `R = R<sub>max</sub>·f`],
+      how: `Both phases have exact solutions. During association f(t) = f<sub>eq</sub>(1 − e<sup>−k<sub>obs</sub>t</sup>), with k<sub>obs</sub> = k<sub>a</sub>[A] + k<sub>d</sub> and f<sub>eq</sub> = [A]/([A] + K<sub>D</sub>). During dissociation, f decays as e<sup>−k<sub>d</sub>(t − t<sub>a</sub>)</sup> from its value at the end of association, and R = R<sub>max</sub>·f.`,
+      assume: `<b>One kind of site.</b> Every ligand site is identical and independent.`,
+    },
+  };
+
+  const active = () => S.an.map((a, i) => ({ ...a, i })).filter(a => a.on);
+
+  // 1:1 analytic, t measured from start of association; returns fraction bound
+  function f11(t, C, ka, kd) {
+    if (t <= 0) return 0;
+    const kobs = ka * C + kd, eq = ka * C / kobs;
+    if (t <= S.ta) return eq * (1 - Math.exp(-kobs * t));
+    return eq * (1 - Math.exp(-kobs * S.ta)) * Math.exp(-kd * (t - S.ta));
+  }
+  const simulate = (a, cnM, times) => times.map(t => f11(t, cnM * 1e-9, a.ka, a.kd));
+  const feq = (a, cnM) => { const C = cnM * 1e-9; return C / (C + a.kd / a.ka); };
+  const KDof = a => a.kd / a.ka * 1e9;
+
+  const concs = () => Array.from({ length: S.n }, (_, i) => S.ctop / Math.pow(S.fold, i));
+  function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  function curves() {
+    const cs = concs(), t0 = -S.tb, t1 = S.ta + S.td, N = 500;
+    const times = Array.from({ length: N + 1 }, (_, j) => t0 + (t1 - t0) * j / N);
+    const out = [];
+    active().forEach(a => {
+      const r = rng(12345 + a.i * 7919);
+      cs.forEach((c, q) => {
+        const clean = simulate(a, c, times).map(v => v * S.rmax);
+        const pts = times.map((t, j) => [t, clean[j] + (S.sigma > 0 ? S.sigma * gauss(r) : 0)]);
+        out.push({ a, c, q, key: a.i + ":" + q, pts, clean, times });
+      });
+    });
+    return out;
+  }
+  function interp(cv, t) {
+    const { times, clean } = cv, n = times.length - 1;
+    const x = (t - times[0]) / (times[n] - times[0]) * n, j = Math.max(0, Math.min(n - 1, Math.floor(x)));
+    const fr = x - j; return clean[j] * (1 - fr) + clean[j + 1] * fr;
+  }
+  const fmtRU = v => v.toFixed(S.rmax >= 100 ? 1 : S.rmax >= 10 ? 2 : 3);
+
+  // ---------- colors: one hue per analyte, darkest = highest concentration ----------
+  function shade(ai, q, n) {
+    const dark = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ramp-l")) || 44) > 55;
+    const f = n <= 1 ? 0 : q / (n - 1);
+    const l = dark ? 82 - f * 40 : 26 + f * 46;
+    const sat = ai === 1 ? 82 : ai === 2 ? 58 : 68;
+    return `hsl(${HUES[ai]} ${sat}% ${l.toFixed(0)}%)`;
+  }
+  const keyColor = ai => shade(ai, 0, 3);
+  function niceTicks(a, b, count) {
+    const span = b - a, step0 = span / count, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const err = step0 / mag, step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+    const out = []; for (let v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ---------- chart ----------
+  // pick a chart height so the plot column ends level with the settings panel (side-by-side layout only)
+  function fitHeight(fallback) {
+    const aside = document.querySelector(".controls"), main = document.querySelector(".main");
+    if (getComputedStyle(document.querySelector(".layout")).gridTemplateColumns.split(" ").length < 2) return fallback;
+    const bottomOf = el => { const k = el.lastElementChild; return k ? k.getBoundingClientRect().bottom : el.getBoundingClientRect().bottom; };
+    const aTop = aside.getBoundingClientRect().top, cs = getComputedStyle(aside);
+    const asideH = bottomOf(aside) - aTop + parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth);
+    const svg = chart.querySelector("svg"), cur = svg ? svg.getBoundingClientRect().height : 0;
+    const other = bottomOf(main) - main.getBoundingClientRect().top - cur;
+    const H = Math.round(asideH - other);
+    return H > 0 ? Math.max(280, Math.min(640, H)) : fallback;
+  }
+  const chart = $("chart");
+  let lastCurves = [], geom = null;
+  function draw() {
+    const cv = lastCurves = curves(), n = S.n;
+    const W = Math.max(300, chart.clientWidth), narrow = W < 520;
+    const H = narrow ? 300 : fitHeight(Math.max(300, Math.min(390, Math.round(W * 0.4))));
+    const m = { l: 56, r: 14, t: 22, b: 42 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const t0 = -S.tb, t1 = S.ta + S.td;
+    const ymax = S.rmax;
+    const ymin = S.sigma > 0 ? -Math.min(3 * S.sigma, 0.25 * S.rmax) : 0;
+    const x = t => m.l + (t - t0) / (t1 - t0) * iw;
+    const y = v => m.t + ih - (v - ymin) / (ymax - ymin) * ih;
+    geom = { x, y, m, iw, ih, t0, t1, W, H };
+
+    const yt = niceTicks(0, ymax, 5), xt = niceTicks(t0, t1, narrow ? 4 : 8);
+    const unitMin = t1 - t0 > 1800;
+    const xl = v => unitMin ? (+(v / 60).toPrecision(3)) : v;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Response (RU) versus time for ${active().length} analytes at ${n} concentrations">`;
+    s += `<rect x="${x(0)}" y="${m.t}" width="${x(S.ta) - x(0)}" height="${ih}" fill="var(--assoc)"/>`;
+    s += `<rect x="${x(S.ta)}" y="${m.t}" width="${x(t1) - x(S.ta)}" height="${ih}" fill="var(--dissoc)"/>`;
+    const lab = (tx, txt) => `<text x="${tx}" y="${m.t - 7}" fill="var(--muted)" font-size="11" font-family="var(--f-ui)" font-weight="600" letter-spacing="0.06em">${txt}</text>`;
+    if (S.tb > 0 && x(0) - m.l > 60) s += lab(m.l + 4, "BASELINE");
+    if (x(S.ta) - x(0) > 80) s += lab(x(0) + 4, "ASSOCIATION");
+    if (x(t1) - x(S.ta) > 80) s += lab(x(S.ta) + 4, "DISSOCIATION");
+    yt.forEach(v => {
+      s += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+      s += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" fill="var(--muted)" font-size="11" font-family="var(--f-num)">${+v.toPrecision(4)}</text>`;
+    });
+    xt.forEach(v => {
+      s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t + ih}" y2="${m.t + ih + 5}" stroke="var(--muted)"/>`;
+      s += `<text x="${x(v)}" y="${m.t + ih + 18}" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="var(--f-num)">${xl(v)}</text>`;
+    });
+    s += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/>`;
+    [0, S.ta].forEach(v => s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" stroke-dasharray="3 3" stroke-width="1"/>`);
+    s += `<text x="${m.l + iw / 2}" y="${H - 6}" text-anchor="middle" fill="var(--muted)" font-size="12" font-family="var(--f-ui)">Time (${unitMin ? "min" : "s"}) from start of association</text>`;
+    s += `<text transform="translate(12 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle" fill="var(--muted)" font-size="12" font-family="var(--f-ui)">Response (RU)</text>`;
+    for (let k = cv.length - 1; k >= 0; k--) {
+      const c = cv[k]; if (S.hidden.has(c.key)) continue;
+      const d = c.pts.map((p, j) => (j ? "L" : "M") + x(p[0]).toFixed(1) + " " + y(p[1]).toFixed(1)).join("");
+      s += `<path d="${d}" fill="none" stroke="${shade(c.a.i, c.q, n)}" stroke-width="${S.sigma > 0 ? 1.2 : 2}" stroke-linejoin="round"/>`;
+    }
+    s += `<g id="hover" visibility="hidden"><line id="hl" y1="${m.t}" y2="${m.t + ih}" stroke="var(--fg)" stroke-opacity="0.35"/><g id="hd"></g></g>`;
+    s += `<rect id="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/>`;
+    s += `</svg><div class="tip" id="tip" hidden></div>`;
+    chart.innerHTML = s;
+    bindHover();
+  }
+
+  function bindHover() {
+    const hit = chart.querySelector("#hit"), svg = chart.querySelector("svg"), tip = $("tip");
+    const hov = chart.querySelector("#hover"), hl = chart.querySelector("#hl"), hd = chart.querySelector("#hd");
+    const leave = () => { hov.setAttribute("visibility", "hidden"); tip.hidden = true; $("readout").textContent = "Hover over the plot to read values"; };
+    const move = ev => {
+      const r = svg.getBoundingClientRect(), sc = geom.W / r.width;
+      const px = (ev.clientX - r.left) * sc;
+      const t = geom.t0 + (px - geom.m.l) / geom.iw * (geom.t1 - geom.t0);
+      if (t < geom.t0 || t > geom.t1) return leave();
+      hov.setAttribute("visibility", "visible");
+      hl.setAttribute("x1", px); hl.setAttribute("x2", px);
+      const phase = t < 0 ? "baseline" : t <= S.ta ? "association" : "dissociation";
+      let dots = "", rows = "", lastA = -1;
+      lastCurves.forEach(c => {
+        if (S.hidden.has(c.key)) return;
+        const v = interp(c, t), col = shade(c.a.i, c.q, S.n);
+        if (c.a.i !== lastA && active().length > 1) { rows += `<div class="ta">${esc(c.a.name)}</div>`; lastA = c.a.i; }
+        dots += `<circle cx="${px}" cy="${geom.y(v)}" r="3.5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/>`;
+        rows += `<div class="r"><span><i class="sw" style="background:${col}"></i>${conc(c.c)}</span><span>${fmtRU(v)} RU</span></div>`;
+      });
+      hd.innerHTML = dots;
+      tip.innerHTML = `<div class="t">t = ${t.toFixed(geom.t1 - geom.t0 > 100 ? 0 : 1)} s · ${phase}</div>` + rows;
+      tip.hidden = false;
+      const cw = chart.clientWidth, tw = tip.offsetWidth, cx = ev.clientX - chart.getBoundingClientRect().left;
+      tip.style.left = (cx + 14 + tw > cw ? cx - 14 - tw : cx + 14) + "px";
+      tip.style.top = (geom.m.t / sc + 6) + "px";
+      $("readout").textContent = `t = ${t.toFixed(1)} s (${phase})`;
+    };
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", leave);
+  }
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  // ---------- binding constants: one column per analyte ----------
+  const ROWS = [
+    { key: "ka", role: "a", label: "k<sub>a</sub>", unit: "M⁻¹s⁻¹", lo: 1, hi: 1e10 },
+    { key: "kd", role: "d", label: "k<sub>d</sub>", unit: "s⁻¹", lo: 1e-8, hi: 100 },
+    { key: "KD", role: "K", label: "K<sub>D</sub>", unit: "nM", lo: 1e-5, hi: 1e9 },
+  ];
+  function syncK() { S.an.forEach(a => a.KD = a.kd / a.ka * 1e9); }
+  function applyCalc(a) {
+    if (S.calc === "K") a.KD = a.kd / a.ka * 1e9;
+    else if (S.calc === "a") a.ka = a.kd / (a.KD * 1e-9);
+    else a.kd = a.KD * 1e-9 * a.ka;
+  }
+  function ladder(v, dir) {
+    const e = Math.floor(Math.log10(v) + 1e-9), base = Math.pow(10, e);
+    const seq = [1, 2, 5, 10, 20, 50].map(m => +(m * base / 10).toPrecision(3)).concat([1, 2, 5, 10, 20].map(m => +(m * base).toPrecision(3)));
+    return dir > 0 ? seq.find(x => x > v * 1.0001) : seq.reverse().find(x => x < v * 0.9999);
+  }
+  function buildRates() {
+    let h = `<div class="agrid"><span></span>`;
+    S.an.forEach((a, i) => {
+      h += `<div class="ahead${a.on ? "" : " off"}" style="--ac:${keyColor(i)}">
+        <input type="checkbox" id="an-on-${i}" ${a.on ? "checked" : ""} aria-label="Include ${esc(a.name)}">
+        <input type="text" class="aname" id="an-name-${i}" value="${esc(a.name)}" spellcheck="false" aria-label="Name of analyte ${i + 1}"></div>`;
+    });
+    h += `<span></span>`;
+    ROWS.forEach(r => {
+      h += `<label class="rlab" for="an-${r.role}-0">${r.label}<span class="u">${r.unit}</span></label>`;
+      S.an.forEach((a, i) => {
+        h += `<div class="spin acell${a.on ? "" : " off"}"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="-1" aria-label="Decrease ${r.key} for analyte ${i + 1}">−</button><input id="an-${r.role}-${i}" data-ai="${i}" data-rk="${r.key}" type="text" inputmode="decimal" spellcheck="false" aria-label="${r.key} for analyte ${i + 1}"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="1" aria-label="Increase ${r.key} for analyte ${i + 1}">+</button></div>`;
+      });
+      h += `<button type="button" class="calcbtn" data-role="${r.role}" aria-label="Calculate ${r.key} from the other two"></button>`;
+    });
+    h += `<span></span><span></span>` + [1, 2].map(i => `<button type="button" class="copya" data-copy="${i}" aria-label="Copy Analyte 1 constants into analyte ${i + 1}">Copy A1</button>`).join("") + `<span></span>`;
+    $("rates").innerHTML = h + `</div>`;
+  }
+  function refreshRates() {
+    ROWS.forEach(r => {
+      const calc = S.calc === r.role;
+      S.an.forEach((a, i) => {
+        const t = $(`an-${r.role}-${i}`);
+        if (document.activeElement !== t) t.value = sci(a[r.key]);
+        t.readOnly = calc || !a.on; t.classList.toggle("calc", calc);
+        t.parentElement.classList.toggle("is-calc", calc);
+        t.parentElement.classList.toggle("off", !a.on);
+        t.parentElement.querySelectorAll("button").forEach(b => {
+          b.disabled = calc || !a.on || (+b.dataset.d < 0 ? a[r.key] <= r.lo * 1.0001 : a[r.key] >= r.hi * 0.9999);
+        });
+      });
+      const b = document.querySelector(`.calcbtn[data-role="${r.role}"]`);
+      b.setAttribute("aria-pressed", calc); b.title = calc ? "Calculated from the other two" : "Calculate this from the other two";
+    });
+    S.an.forEach((a, i) => {
+      const cb = $(`an-on-${i}`); cb.checked = a.on;
+      cb.disabled = a.on && active().length === 1;           // keep at least one analyte
+      cb.parentElement.classList.toggle("off", !a.on);
+    });
+  }
+  $("rates").addEventListener("input", e => {
+    const t = e.target;
+    if (t.classList.contains("aname")) { S.an[+t.id.split("-")[2]].name = t.value || `Analyte ${+t.id.split("-")[2] + 1}`; legend(); stats(); table(); return; }
+    if (!t.dataset.rk || t.readOnly) return;
+    const a = S.an[+t.dataset.ai], r = ROWS.find(x => x.key === t.dataset.rk);
+    const v = parseNum(t.value), ok = isFinite(v) && v >= r.lo && v <= r.hi;
+    t.classList.toggle("bad", !ok); if (!ok) return;
+    a[r.key] = v; applyCalc(a); refreshRates(); clearPreset(); render();
+  });
+  $("rates").addEventListener("focusout", e => {
+    const t = e.target;
+    if (t.dataset && t.dataset.rk) { t.classList.remove("bad"); t.value = sci(S.an[+t.dataset.ai][t.dataset.rk]); }
+    if (t.classList && t.classList.contains("aname")) t.value = S.an[+t.id.split("-")[2]].name;
+  });
+  $("rates").addEventListener("change", e => {
+    const t = e.target; if (t.type !== "checkbox") return;
+    const i = +t.id.split("-")[2]; S.an[i].on = t.checked;
+    refreshRates(); clearPreset(); render();
+  });
+  $("rates").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.classList.contains("calcbtn")) { S.calc = b.dataset.role; refreshRates(); return; }
+    if (b.dataset.copy) { const t = S.an[+b.dataset.copy], a0 = S.an[0]; t.ka = a0.ka; t.kd = a0.kd; t.KD = a0.KD; refreshRates(); clearPreset(); render(); return; }
+    const a = S.an[+b.dataset.ai], r = ROWS.find(x => x.key === b.dataset.rk);
+    const v = ladder(a[r.key], +b.dataset.d); if (v === undefined) return;
+    a[r.key] = Math.min(r.hi, Math.max(r.lo, v)); applyCalc(a); refreshRates(); clearPreset(); render();
+  });
+
+  function renderModel() {
+    const M = MODELS.one;
+    $("eqbox").innerHTML = `<div class="rxs">${M.rx.map(r => `<div class="rx">${r}</div>`).join("")}</div><div class="eqs">${M.eqs.map(e => `<div>${e}</div>`).join("")}</div>`;
+    buildRates(); refreshRates();
+  }
+
+  // ---------- legend, stats, table ----------
+  function legend() { return;
+    const cs = concs();
+    $("legend").innerHTML = active().map(a => `<div class="lg-row"><span class="lg-name" style="color:${keyColor(a.i)}">${esc(a.name)}</span>` +
+      cs.map((c, q) => { const key = a.i + ":" + q, off = S.hidden.has(key);
+        return `<button type="button" data-key="${key}" class="${off ? "off" : ""}" aria-pressed="${!off}"><i class="sw" style="background:${shade(a.i, q, cs.length)}"></i>${conc(c)}</button>`; }).join("") + `</div>`).join("");
+  }
+  $("legend")?.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const k = b.dataset.key; S.hidden.has(k) ? S.hidden.delete(k) : S.hidden.add(k);
+    legend(); draw();
+  });
+
+  function stats() {
+    const cs = concs();
+    $("range-hint").textContent = `${conc(cs[0])} → ${conc(cs[cs.length - 1])}`;
+  }
+
+  function table() {
+    const cs = concs(), A = active(), multi = A.length > 1;
+    const sub = `<th class="gs"><span class="sym">[A]/K<sub>D</sub></span></th><th><span class="sym">k<sub>obs</sub></span> (s⁻¹)</th><th><span class="sym">f<sub>eq</sub></span></th><th><span class="sym">f<sub>end</sub></span></th><th><span class="sym">f<sub>end</sub>/f<sub>eq</sub> (%)</span></th>`;
+    $("thead").innerHTML = `<tr><th rowspan="2" class="ca">[A]</th>` + A.map(a => { const K = KDof(a);
+      return `<th colspan="5" class="gh" style="--ac:${keyColor(a.i)}"><span class="gname">${esc(a.name)}</span><span class="gstat">K<sub>D</sub> <b>${conc(K)}</b></span><span class="gstat">t½ <b>${dur(Math.LN2 / a.kd)}</b></span><span class="gstat">Residence <b>${dur(1 / a.kd)}</b></span></th>`; }).join("") +
+      `</tr><tr>` + A.map(() => sub).join("") + `</tr>`;
+    const R = A.map(a => cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; }));
+    $("tbody").innerHTML = cs.map((c, q) => `<tr><td class="ca">${conc(c)}</td>` + A.map((a, j) => { const r = R[j][q];
+      return `<td class="gs">${sci(c / KDof(a))}</td><td>${sci(r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td>`; }).join("") + `</tr>`).join("");
+
+    const groups = [];
+    A.forEach((a, j) => {
+      const notes = [];
+      const K = KDof(a), rows = R[j], top = rows[0];
+      const allSS = rows.every(r => r.pct >= 95), anyLow = rows.some(r => r.pct < 50);
+      const pre = "";
+      const lo = cs[cs.length - 1] / K, hi = cs[0] / K;
+      if (hi < 3) notes.push(pre + `<b>Top concentration is low.</b> The highest analyte concentration is only ${sci(hi)}× K<sub>D</sub>, so curves will not approach saturation. A series spanning roughly 0.1–10× K<sub>D</sub> gives the best constraint on the rates.`);
+      else if (lo > 1) notes.push(pre + `<b>All concentrations are above K<sub>D</sub>.</b> Add lower concentrations (down to ~0.1× K<sub>D</sub>) so the association rate varies enough across the series to separate the rate constants.`);
+      else notes.push(pre + `<b>Concentration range looks reasonable</b> at ${sci(lo)}–${sci(hi)}× K<sub>D</sub>.`);
+      const dFrac = top.end > 0 ? 1 - top.dEnd / top.end : 0;
+      if (dFrac < 0.05) notes.push(pre + `<b>Very little dissociation is observed.</b> Only ${(dFrac * 100).toFixed(1)}% of complex decays in ${dur(S.td)}. For k<sub>d</sub> = ${sciPretty(a.kd)} s⁻¹ you would need about ${dur(0.05 / a.kd)} to see 5% decay; tight binders often need long dissociation phases for a reliable k<sub>d</sub>.`);
+      else notes.push(pre + `<b>${(dFrac * 100).toFixed(0)}% of the top-concentration signal dissociates</b> during the ${dur(S.td)} dissociation phase.`);
+      if (!allSS) notes.push(pre + (anyLow
+        ? `<b>Low concentrations are far from equilibrium.</b> Steady-state (equilibrium) analysis of these curves would underestimate R<sub>eq</sub> and bias K<sub>D</sub> upward; rely on the kinetic fit or lengthen the association phase.`
+        : `<b>Some curves stop short of equilibrium.</b> Lengthen the association phase if you plan a steady-state analysis.`));
+      groups.push(`<div class="ngroup">${multi ? `<h4 style="color:${keyColor(a.i)}">${esc(a.name)}</h4>` : ""}${notes.map(n => `<p>${n}</p>`).join("")}</div>`);
+    });
+    $("notes").innerHTML = groups.join("");
+    $("notes").style.gridTemplateColumns = `repeat(${A.length}, minmax(0, 1fr))`;
+  }
+
+  // ---------- shared inputs ----------
+  function syncInputs() {
+    $("ta-t").value = S.ta; $("td-t").value = S.td;
+    $("tb-t").value = S.tb;
+    $("ctop").value = sci(S.ctop); $("fold").value = S.fold; $("rmax").value = +S.rmax.toPrecision(4);
+    $("n-t").value = S.n; spinState();
+    $("sigma").value = +S.sigma.toPrecision(3);
+  }
+  function render() { stats(); legend(); draw(); table(); }
+
+  const bindPair = (txt, rngId, key, { min, max, int = false }) => {
+    $(rngId).addEventListener("input", e => { S[key] = +e.target.value; $(txt).value = S[key]; clearPreset(); if (key === "n") S.hidden.clear(); render(); });
+    $(txt).addEventListener("input", e => {
+      let v = parseNum(e.target.value); const ok = isFinite(v) && v >= min && v <= max;
+      e.target.classList.toggle("bad", !ok); if (!ok) return;
+      if (int) v = Math.round(v);
+      S[key] = v; $(rngId).value = v; clearPreset(); if (key === "n") S.hidden.clear(); render();
+    });
+    $(txt).addEventListener("blur", e => { e.target.classList.remove("bad"); e.target.value = S[key]; });
+  };
+  const single = (id, key, min, max, fmt) => {
+    $(id).addEventListener("input", e => {
+      const v = parseNum(e.target.value), ok = isFinite(v) && v >= min && v <= max;
+      e.target.classList.toggle("bad", !ok); if (!ok) return;
+      S[key] = key === "n" ? Math.round(v) : v; if (key === "n") S.hidden.clear();
+      clearPreset(); spinState(); render();
+    });
+    $(id).addEventListener("blur", e => { e.target.classList.remove("bad"); e.target.value = fmt ? fmt(S[key]) : S[key]; });
+  };
+  single("tb-t", "tb", 0, 1e4);
+  single("ta-t", "ta", 1, 1e5);
+  single("td-t", "td", 1, 1e5);
+  single("ctop", "ctop", 1e-6, 1e9, sci);
+  single("fold", "fold", 1.1, 20);
+  single("n-t", "n", 1, 12);
+  // 1-2-5 ladder for values that span decades
+  const LADDER = [0]; for (let e = -2; e <= 5; e++) [1, 2, 5].forEach(m => LADDER.push(+(m * Math.pow(10, e)).toPrecision(3)));
+  const CONCS = []; for (let e = -3; e <= 7; e++) [1, 2, 5].forEach(m => CONCS.push(+(m * Math.pow(10, e)).toPrecision(3)));
+  const TIMES = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 450, 600, 900, 1200, 1800, 2400, 3600, 5400, 7200, 10800, 14400, 21600, 28800, 43200, 86400];
+  const SPIN = {
+    fold: { key: "fold", step: 0.5, min: 1.5, max: 20 },
+    ctop: { key: "ctop", seq: CONCS, min: 1e-3, max: 1e7, fmt: sci },
+    "ta-t": { key: "ta", seq: TIMES.slice(1), min: 5, max: 1e5 },
+    "td-t": { key: "td", seq: TIMES.slice(1), min: 5, max: 1e5 },
+    "tb-t": { key: "tb", seq: TIMES, min: 0, max: 1e4 },
+    "n-t": { key: "n", step: 1, min: 1, max: 12 },
+    rmax: { key: "rmax", ladder: true, min: 0.1, max: 1e5 },
+    sigma: { key: "sigma", ladder: true, min: 0, max: 1e4 },
+  };
+  function spinState() {
+    document.querySelectorAll(".spin button[data-for]").forEach(b => {
+      const c = SPIN[b.dataset.for], d = +b.dataset.d;
+      b.disabled = d < 0 ? S[c.key] <= c.min : S[c.key] >= c.max;
+    });
+  }
+  document.querySelectorAll(".spin button[data-for]").forEach(b => b.addEventListener("click", () => {
+    const c = SPIN[b.dataset.for], d = +b.dataset.d;
+    let v = S[c.key];
+    if (c.ladder || c.seq) {
+      const L = c.seq || LADDER;
+      const next = d > 0 ? L.find(x => x > v * 1.0001 + 1e-12) : [...L].reverse().find(x => x < v * 0.9999);
+      v = next ?? v;
+    } else v = d > 0 ? Math.floor(v / c.step + 1e-9) * c.step + c.step : Math.ceil(v / c.step - 1e-9) * c.step - c.step;
+    v = Math.min(c.max, Math.max(c.min, (c.ladder || c.seq) ? v : +v.toFixed(2)));
+    S[c.key] = v; $(b.dataset.for).value = c.fmt ? c.fmt(v) : v; $(b.dataset.for).classList.remove("bad");
+    if (c.key === "n") S.hidden.clear();
+    clearPreset(); spinState(); render();
+  }));
+  single("rmax", "rmax", 0.1, 1e5);
+  single("sigma", "sigma", 0, 1e4);
+
+  function clearPreset() { document.querySelectorAll("#presets button").forEach(b => b.setAttribute("aria-pressed", "false")); }
+  $("presets").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const P = PRESETS[b.dataset.p];
+    S.an.forEach((a, i) => { a.on = i < (P.onN ?? P.an.length); if (P.an[i]) { a.ka = P.an[i][0]; a.kd = P.an[i][1]; } });
+    ["ta", "td", "ctop", "fold", "n"].forEach(k => S[k] = P[k]);
+    S.hidden.clear(); syncK();
+    clearPreset(); b.setAttribute("aria-pressed", "true");
+    syncInputs(); refreshRates(); render();
+  });
+
+  // ---------- copy (tab-separated) ----------
+  function buildTSV() {
+    const cs = concs(), t0 = -S.tb, t1 = S.ta + S.td;
+    const step = Math.max(0.1, +((t1 - t0) / 1000).toPrecision(1));
+    const times = []; for (let t = t0; t <= t1 + 1e-9; t += step) times.push(+t.toFixed(3));
+    const cols = [], heads = [];
+    active().forEach(a => {
+      const r = rng(12345 + a.i * 7919);
+      cs.forEach(c => {
+        heads.push(`${a.name} ${conc(c)} (RU)`);
+        cols.push(simulate(a, c, times).map(v => v * S.rmax + (S.sigma > 0 ? S.sigma * gauss(r) : 0)));
+      });
+    });
+    let out = "Time (s)\t" + heads.join("\t") + "\n";
+    times.forEach((t, j) => { out += t + "\t" + cols.map(col => col[j].toPrecision(6)).join("\t") + "\n"; });
+    return out;
+  }
+  const flash = (btn, msg, rest) => { btn.textContent = msg; setTimeout(() => btn.textContent = rest, 2000); };
+  $("copy").addEventListener("click", async () => {
+    const btn = $("copy");
+    try { await navigator.clipboard.writeText(buildTSV()); flash(btn, "Copied", "Copy simulated data"); }
+    catch { flash(btn, "Copy blocked by browser", "Copy simulated data"); }
+  });
+
+  // ---------- boot ----------
+  syncK();
+  syncInputs();
+  document.querySelector('#presets [data-p="protein"]').setAttribute("aria-pressed", "true");
+  renderModel();
+  render();
+  let lastW = 0;
+  new ResizeObserver(() => { const w = chart.clientWidth; if (w !== lastW) { lastW = w; draw(); } }).observe(chart);
+  const rethem = () => { buildRates(); refreshRates(); render(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", rethem);
+  new MutationObserver(rethem).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+
+</body>
+</html>
