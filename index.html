@@ -227,7 +227,10 @@ tr.grp td .sw { margin-right: 6px; vertical-align: middle; }
 #chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 12px var(--f-num); box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tip .t { color: var(--muted); margin-bottom: 4px; }
-.tip .r { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .r { display: grid; grid-template-columns: 7.2em 6.4em 5em; column-gap: 14px; align-items: center; }
+.tip .r > span:not(:first-child) { text-align: right; justify-self: end; }
+.tip .r.th { color: var(--muted); font: 600 10.5px var(--f-ui); margin-bottom: 2px; }
+
 .tip .r span:first-child { display: flex; align-items: center; gap: 6px; }
 .sw { width: 10px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font: 12px var(--f-num); }
@@ -478,6 +481,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
         <li><b>f<sub>eq</sub></b> — R<sub>eq</sub>/R<sub>max</sub>: fraction bound at equilibrium. f<sub>eq</sub> = [A] / ([A] + K<sub>D</sub>).</li>
         <li><b>f<sub>end</sub></b> — R<sub>end</sub>/R<sub>max</sub>: fraction bound at the end of the association phase. f<sub>end</sub> = f<sub>eq</sub>·(1 − e<sup>−k<sub>obs</sub>·t<sub>a</sub></sup>), where t<sub>a</sub> is the association time.</li>
         <li><b>f<sub>end</sub>/f<sub>eq</sub> (%)</b> — How close each curve got to equilibrium. Values under 95%, shown in red, mean steady state was not reached.</li>
+        <li><b>f<sub>t</sub>/f<sub>eq</sub></b> — Shown when you hover over the plot: how far each curve has progressed toward its equilibrium response at that moment.</li>
         <li><b>R<sub>eq</sub></b> — The response a curve would reach at equilibrium for a given concentration.</li>
         <li><b>Steady state</b> — The association phase has run long enough to reach equilibrium. Here, a curve counts as reached at 95% of R<sub>eq</sub>.</li>
         <li><b>Ligand (L)</b> — The binding partner immobilized on the sensor surface.</li>
@@ -695,10 +699,11 @@ td.c { display: flex; align-items: center; gap: 8px; }
         const v = interp(c, t), col = shade(c.a.i, c.q, S.n);
         if (c.a.i !== lastA && active().length > 1) { rows += `<div class="ta">${esc(c.a.name)}</div>`; lastA = c.a.i; }
         dots += `<circle cx="${px}" cy="${geom.y(v)}" r="3.5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/>`;
-        rows += `<div class="r"><span><i class="sw" style="background:${col}"></i>${conc(c.c)}</span><span>${fmtRU(v)} RU</span></div>`;
+        const fe = feq(c.a, c.c) * S.rmax, pr = fe > 0 ? 100 * v / fe : 0;
+        rows += `<div class="r"><span><i class="sw" style="background:${col}"></i>${conc(c.c)}</span><span>${fmtRU(v)} RU</span><span>${pr.toFixed(1)}%</span></div>`;
       });
       hd.innerHTML = dots;
-      tip.innerHTML = `<div class="t">t = ${t.toFixed(geom.t1 - geom.t0 > 100 ? 0 : 1)} s · ${phase}</div>` + rows;
+      tip.innerHTML = `<div class="t">t = ${t.toFixed(geom.t1 - geom.t0 > 100 ? 0 : 1)} s · ${phase}</div><div class="r th"><span>[A]</span><span>R</span><span>f<sub>t</sub>/f<sub>eq</sub></span></div>` + rows;
       tip.hidden = false;
       const cw = chart.clientWidth, tw = tip.offsetWidth, cx = ev.clientX - chart.getBoundingClientRect().left;
       tip.style.left = (cx + 14 + tw > cw ? cx - 14 - tw : cx + 14) + "px";
