@@ -9,7 +9,7 @@
 <title>Binding Kinetics Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: instrument panel — controls rail on the left, sensorgram + readouts on the right; stacks on phones */
 :root {
@@ -49,8 +49,8 @@
 body { background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 14px; line-height: 1.45; }
 .wrap { margin: 0 auto; padding-inline: clamp(20px, 2.2vw, 44px); padding-block: 14px 40px; display: flex; flex-direction: column; gap: 14px; }
 header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
-h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
-.sub { color: var(--muted); margin: 0; font-size: 1rem; }
+h1 { font-family: "Archivo", -apple-system, "Segoe UI", Roboto, sans-serif; font-size: clamp(18px, 1.7vw, 21px); font-weight: 700; line-height: 1.2; letter-spacing: -0.018em; margin: 0; text-wrap: balance; }
+.sub { font-family: "Archivo", -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); margin: 0; font-size: 12.5px; line-height: 1.4; }
 .model { font-family: var(--f-num); font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
 .layout { display: grid; grid-template-columns: clamp(372px, 24vw, 440px) minmax(0, 1fr); gap: 14px; align-items: stretch; }
 @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
@@ -120,6 +120,37 @@ h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; t
 .row3 .field label .u { margin-left: 4px; }
 .row3 .spin input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 12.5px var(--f-num); color: var(--fg); padding: 0; }
 .row3 .spin button { width: 26px; }
+.row4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+.row4 .field { grid-template-columns: 1fr; gap: 3px; min-width: 0; }
+.row4 .field label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row4 .field label .u { margin-left: 3px; }
+.row4 .spin button { width: 20px; }
+.row4 .spin input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 12.5px var(--f-num); color: var(--fg); padding: 0; }
+.usel { width: 100%; height: 30px; font: 500 13px var(--f-ui); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; cursor: pointer; }
+.acards { display: flex; flex-direction: column; gap: 8px; }
+.acard { border: 1px solid var(--line); border-left: 3px solid var(--ac); border-radius: 8px; padding: 6px 8px 7px; background: var(--bg); display: flex; flex-direction: column; gap: 5px; }
+.acard.off { border-left-color: var(--line); }
+.acard.off .ac-head .dot, .acard.off .aname, .acard.off .copya, .acard.off .ac-grid, .acard.off .ac-hint { opacity: 0.45; filter: grayscale(1); }
+.ac-head { display: flex; align-items: center; gap: 6px; }
+.ac-head .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--ac); flex: none; }
+.ac-head .aname { flex: 1; min-width: 0; font: 600 12.5px var(--f-ui); color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 1px 3px; }
+.ac-head .aname:hover, .ac-head .aname:focus { border-color: var(--line); background: var(--surface); }
+.tgl { position: relative; display: inline-flex; align-items: center; flex: none; cursor: pointer; }
+.tgl input { position: absolute; z-index: 1; opacity: 0; width: 32px; height: 18px; margin: 0; cursor: pointer; }
+.tgl span { width: 30px; height: 17px; border-radius: 999px; background: var(--line); display: block; position: relative; transition: background .12s; }
+.tgl span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .12s; }
+.tgl input:checked + span { background: var(--ac); }
+.tgl input:checked + span::after { transform: translateX(13px); }
+.tgl input:disabled { cursor: default; }
+.tgl input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ac-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px 5px; }
+.ac-f { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-l { display: flex; align-items: center; justify-content: flex-start; gap: 5px; min-width: 0; }
+.ac-l label { font-weight: 500; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-l label .u { color: var(--muted); font-size: 10px; font-weight: 400; margin-left: 2px; }
+.ac-l .calcbtn { width: 10px; height: 10px; }
+.ac-hint { font-size: 11.5px; color: var(--muted); }
+.copya { flex: none; }
 .agrid { display: grid; grid-template-columns: 44px repeat(2, minmax(0, 1fr)) 12px; gap: 5px 5px; align-items: center; }
 .ahead { display: flex; align-items: center; gap: 2px; min-width: 0; border-bottom: 3px solid var(--ac); padding-bottom: 3px; }
 .ahead input[type="checkbox"] { margin: 0; width: 13px; height: 13px; accent-color: var(--ac); flex: none; }
@@ -128,7 +159,7 @@ h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; t
 .ahead.off { opacity: 0.5; }
 .rlab { font-weight: 500; line-height: 1.1; }
 .rlab .u { display: block; color: var(--muted); font-size: 10px; font-weight: 400; white-space: nowrap; }
-.copya { font: 500 11px var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 5px; padding: 3px 0; cursor: pointer; }
+.copya { justify-self: center; font: 500 10.5px var(--f-ui); color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 5px; padding: 2px 10px; cursor: pointer; }
 .copya:hover { border-color: var(--accent); }
 .acell button { width: 18px; height: 26px; font-size: 13px; }
 .acell input { width: 100%; min-width: 0; border: 0; border-radius: 0; text-align: center; background: transparent; font: 11.5px var(--f-num); padding: 0 1px; color: var(--fg); height: 26px; }
@@ -295,7 +326,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
 .credit b { color: var(--fg); font-weight: 600; }
 .credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line); }
 .credit a:hover { color: var(--fg); text-decoration-color: var(--muted); }
-@media (max-width: 480px) { .wrap { padding-inline: 16px; } h1 { font-size: 1.35rem; } }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -309,12 +340,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
     <aside class="panel controls" aria-label="Simulation settings">
       <div class="group">
         <h2 class="sect">Experimental parameters</h2>
-        <p class="eyebrow">Binding constants <span class="calc-note">● = calculated</span></p>
-        <div class="fields" id="rates"></div>
-      </div>
-
-      <div class="group">
-        <p class="eyebrow">Phase durations</p>
+        <p class="eyebrow">Shared</p>
         <div class="row3">
           <div class="field">
             <label for="ta-t">Association<span class="u">s</span></label>
@@ -341,44 +367,29 @@ td.c { display: flex; align-items: center; gap: 8px; }
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="group">
-        <p class="eyebrow">Analyte series</p>
-        <div class="fields">
-          <div class="row3">
-            <div class="field">
-              <label for="ctop">Top conc.<span class="u">nM</span></label>
-              <div class="spin">
-                <button type="button" data-for="ctop" data-d="-1" aria-label="Lower top concentration">−</button>
-                <input id="ctop" type="text" inputmode="decimal" spellcheck="false">
-                <button type="button" data-for="ctop" data-d="1" aria-label="Raise top concentration">+</button>
-              </div>
-            </div>
-            <div class="field">
-              <label for="fold">Dilution<span class="u">fold</span></label>
-              <div class="spin">
-                <button type="button" data-for="fold" data-d="-1" aria-label="Decrease dilution fold">−</button>
-                <input id="fold" type="text" inputmode="decimal" spellcheck="false">
-                <button type="button" data-for="fold" data-d="1" aria-label="Increase dilution fold">+</button>
-              </div>
-            </div>
-            <div class="field">
-              <label for="n-t">Concentrations</label>
-              <div class="spin">
-                <button type="button" data-for="n-t" data-d="-1" aria-label="Fewer concentrations">−</button>
-                <input id="n-t" type="text" inputmode="numeric" spellcheck="false">
-                <button type="button" data-for="n-t" data-d="1" aria-label="More concentrations">+</button>
-              </div>
+        <div class="row4">
+          <div class="field">
+            <label for="unit">Units</label>
+            <select id="unit" class="usel" aria-label="Concentration units for K_D and top concentration">
+              <option>pM</option><option selected>nM</option><option>µM</option><option>mM</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fold">Dilution<span class="u">fold</span></label>
+            <div class="spin">
+              <button type="button" data-for="fold" data-d="-1" aria-label="Decrease dilution fold">−</button>
+              <input id="fold" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="fold" data-d="1" aria-label="Increase dilution fold">+</button>
             </div>
           </div>
-          <span class="hint" id="range-hint"></span>
-        </div>
-      </div>
-
-      <div class="group">
-        <p class="eyebrow">Surface and noise</p>
-        <div class="row2">
+          <div class="field">
+            <label for="n-t"># Conc.</label>
+            <div class="spin">
+              <button type="button" data-for="n-t" data-d="-1" aria-label="Fewer concentrations">−</button>
+              <input id="n-t" type="text" inputmode="decimal" spellcheck="false">
+              <button type="button" data-for="n-t" data-d="1" aria-label="More concentrations">+</button>
+            </div>
+          </div>
           <div class="field">
             <label for="rmax">R<sub>max</sub><span class="u">RU</span></label>
             <div class="spin">
@@ -387,15 +398,12 @@ td.c { display: flex; align-items: center; gap: 8px; }
               <button type="button" data-for="rmax" data-d="1" aria-label="Increase Rmax">+</button>
             </div>
           </div>
-          <div class="field">
-            <label for="sigma">Noise σ<span class="u">RU, 0 = none</span></label>
-            <div class="spin">
-              <button type="button" data-for="sigma" data-d="-1" aria-label="Decrease noise">−</button>
-              <input id="sigma" type="text" inputmode="decimal" spellcheck="false">
-              <button type="button" data-for="sigma" data-d="1" aria-label="Increase noise">+</button>
-            </div>
-          </div>
         </div>
+      </div>
+
+      <div class="group">
+        <p class="eyebrow">Analytes <span class="calc-note">● = calculated</span></p>
+        <div class="acards" id="rates"></div>
       </div>
     </aside>
 
@@ -444,7 +452,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
       <div class="about-col">
         <div>
           <h4>How it works</h4>
-          <p>Curves are calculated exactly from the 1:1 rate equation for every concentration in the series, through baseline, association and dissociation. Each analyte has its own k<sub>a</sub> and k<sub>d</sub>; all share the surface, timing and series.</p>
+          <p>Curves are calculated exactly from the 1:1 rate equation for every concentration in the series, through baseline, association and dissociation. Each analyte has its own k<sub>a</sub>, k<sub>d</sub> and top concentration; all share the surface, timing, dilution factor and number of concentrations.</p>
         </div>
         <div>
           <h4>What it assumes</h4>
@@ -454,7 +462,6 @@ td.c { display: flex; align-items: center; gap: 8px; }
             <li><b>No mass transport limitation.</b></li>
             <li><b>Ideal injections and a flat, drift-free baseline.</b></li>
             <li><b>Full regeneration</b> between concentrations.</li>
-            <li><b>Gaussian noise</b> of constant σ.</li>
           </ul>
         </div>
       </div>
@@ -471,9 +478,8 @@ td.c { display: flex; align-items: center; gap: 8px; }
         <li><b>Dissociation phase</b> — Analyte is replaced by buffer and bound complex decays.</li>
         <li><b>Baseline</b> — Buffer only, before analyte is added. Response stays at zero.</li>
         <li><b>Analyte (A)</b> — The binding partner in solution, flowed over the sensor (SPR) or into which the sensor is dipped (BLI).</li>
-        <li><b>Dilution series</b> — The set of analyte concentrations, made by serial dilution of the top concentration by the fold factor.</li>
+        <li><b>Dilution series</b> — The set of analyte concentrations, made by serial dilution of each analyte's top concentration by the shared fold factor.</li>
         <li><b>R<sub>max</sub> (RU)</b> — Response when every ligand site is occupied. Depends on how much ligand is immobilized.</li>
-        <li><b>Noise σ</b> — Standard deviation of random Gaussian noise added to each simulated point.</li>
         <li><b>K<sub>D</sub> (M)</b> — Equilibrium dissociation constant, k<sub>d</sub>/k<sub>a</sub>. The analyte concentration that occupies half the sites at equilibrium. Lower means tighter binding.</li>
         <li><b>t<sub>eq</sub> (95%)</b> — Time for association to reach 95% of R<sub>eq</sub>: ln 20 / k<sub>obs</sub> ≈ 3/k<sub>obs</sub>. It is shortest at high concentration; the heading shows the value for the lowest concentration in the series, the slowest curve, and the table gives it for each concentration. As [A] → 0 it approaches ln 20 / k<sub>d</sub>.</li>
         <li><b>Dissociation t½</b> — Time for half the complex to dissociate, ln 2 / k<sub>d</sub>.</li>
@@ -504,18 +510,19 @@ td.c { display: flex; align-items: center; gap: 8px; }
   const HUES = [218, 24, 152];   // one hue per analyte: blue, orange, green
   const S = {
     an: [
-      { name: "Analyte 1", on: true,  ka: 1e5, kd: 1e-3, KD: 10 },
-      { name: "Analyte 2", on: false, ka: 1e5, kd: 1e-2, KD: 100 },
+      { name: "Analyte 1", on: true,  ka: 1e5, kd: 1e-3, KD: 10, ctop: 100, calc: "K" },
+      { name: "Analyte 2", on: false, ka: 1e5, kd: 1e-2, KD: 100, ctop: 1000, calc: "K" },
     ],
-    calc: "K",                          // which of ka, kd, KD is calculated, for every analyte
-    rmax: 10, ta: 300, td: 600, tb: 60, ctop: 100, fold: 2, n: 6, sigma: 0, hidden: new Set()
+    rmax: 10, ta: 300, td: 600, tb: 60, fold: 2, n: 6, sigma: 0, unit: "nM", hidden: new Set()
   };
+  // per analyte: [ka (M⁻¹s⁻¹), kd (s⁻¹), top concentration (nM)]
   const PRESETS = {
-    protein:  { an: [[1e5, 1e-3], [1e5, 1e-2]], onN: 1, ta: 300, td: 600, ctop: 100, fold: 2, n: 6 },
-    antibody: { an: [[5e5, 5e-5], [2e5, 2e-4]], onN: 1, ta: 300, td: 1800, ctop: 50, fold: 2, n: 6 },
-    fragment: { an: [[1e5, 0.5], [2e4, 1]], onN: 1, ta: 60, td: 60, ctop: 100000, fold: 2, n: 8 },
-    samekd:   { an: [[1e6, 1e-2], [1e5, 1e-3]], ta: 600, td: 1200, ctop: 100, fold: 2, n: 5 },
+    protein:  { an: [[1e5, 1e-3, 100], [1e5, 1e-2, 1000]], onN: 1, ta: 300, td: 600, fold: 2, n: 6, unit: "nM" },
+    antibody: { an: [[5e5, 5e-5, 5], [2e5, 2e-4, 10]], onN: 1, ta: 300, td: 1800, fold: 2, n: 6, unit: "nM" },
+    fragment: { an: [[1e5, 0.5, 50000], [2e4, 1, 500000]], onN: 1, ta: 60, td: 60, fold: 2, n: 8, unit: "µM" },
+    samekd:   { an: [[1e6, 1e-2, 100], [1e5, 1e-3, 100]], ta: 600, td: 1200, fold: 2, n: 5, unit: "nM" },
   };
+  const UF = { pM: 1e-3, nM: 1, "µM": 1e3, mM: 1e6 };   // nM per unit
 
   // ---------- formatting ----------
   const sci = v => {
@@ -578,16 +585,16 @@ td.c { display: flex; align-items: center; gap: 8px; }
   const feq = (a, cnM) => { const C = cnM * 1e-9; return C / (C + a.kd / a.ka); };
   const KDof = a => a.kd / a.ka * 1e9;
 
-  const concs = () => Array.from({ length: S.n }, (_, i) => S.ctop / Math.pow(S.fold, i));
+  const concs = a => Array.from({ length: S.n }, (_, i) => a.ctop / Math.pow(S.fold, i));
   function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
   function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 
   function curves() {
-    const cs = concs(), t0 = -S.tb, t1 = S.ta + S.td, N = 500;
+    const t0 = -S.tb, t1 = S.ta + S.td, N = 500;
     const times = Array.from({ length: N + 1 }, (_, j) => t0 + (t1 - t0) * j / N);
     const out = [];
     active().forEach(a => {
-      const r = rng(12345 + a.i * 7919);
+      const r = rng(12345 + a.i * 7919), cs = concs(a);
       cs.forEach((c, q) => {
         const clean = simulate(a, c, times).map(v => v * S.rmax);
         const pts = times.map((t, j) => [t, clean[j] + (S.sigma > 0 ? S.sigma * gauss(r) : 0)]);
@@ -718,16 +725,19 @@ td.c { display: flex; align-items: center; gap: 8px; }
   }
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-  // ---------- binding constants: one column per analyte ----------
+  // ---------- analytes: one card each ----------
   const ROWS = [
-    { key: "ka", role: "a", label: "k<sub>a</sub>", unit: "M⁻¹s⁻¹", lo: 1, hi: 1e10 },
-    { key: "kd", role: "d", label: "k<sub>d</sub>", unit: "s⁻¹", lo: 1e-8, hi: 100 },
-    { key: "KD", role: "K", label: "K<sub>D</sub>", unit: "nM", lo: 1e-5, hi: 1e9 },
+    { key: "ka", role: "a", label: "k<sub>a</sub>", unit: () => "M⁻¹s⁻¹", lo: 1, hi: 1e10 },
+    { key: "kd", role: "d", label: "k<sub>d</sub>", unit: () => "s⁻¹", lo: 1e-8, hi: 100 },
+    { key: "KD", role: "K", label: "K<sub>D</sub>", unit: () => S.unit, lo: 1e-5, hi: 1e9, conc: true },
+    { key: "ctop", role: "", label: "Top", unit: () => S.unit, lo: 1e-3, hi: 1e9, conc: true },
   ];
+  const toDisp = (r, v) => r.conc ? v / UF[S.unit] : v;
+  const fromDisp = (r, v) => r.conc ? v * UF[S.unit] : v;
   function syncK() { S.an.forEach(a => a.KD = a.kd / a.ka * 1e9); }
   function applyCalc(a) {
-    if (S.calc === "K") a.KD = a.kd / a.ka * 1e9;
-    else if (S.calc === "a") a.ka = a.kd / (a.KD * 1e-9);
+    if (a.calc === "K") a.KD = a.kd / a.ka * 1e9;
+    else if (a.calc === "a") a.ka = a.kd / (a.KD * 1e-9);
     else a.kd = a.KD * 1e-9 * a.ka;
   }
   function ladder(v, dir) {
@@ -736,72 +746,67 @@ td.c { display: flex; align-items: center; gap: 8px; }
     return dir > 0 ? seq.find(x => x > v * 1.0001) : seq.reverse().find(x => x < v * 0.9999);
   }
   function buildRates() {
-    let h = `<div class="agrid"><span></span>`;
-    S.an.forEach((a, i) => {
-      h += `<div class="ahead${a.on ? "" : " off"}" style="--ac:${keyColor(i)}">
-        <input type="checkbox" id="an-on-${i}" ${a.on ? "checked" : ""} aria-label="Include ${esc(a.name)}">
-        <input type="text" class="aname" id="an-name-${i}" value="${esc(a.name)}" spellcheck="false" aria-label="Name of analyte ${i + 1}"></div>`;
-    });
-    h += `<span></span>`;
-    ROWS.forEach(r => {
-      h += `<label class="rlab" for="an-${r.role}-0">${r.label}<span class="u">${r.unit}</span></label>`;
-      S.an.forEach((a, i) => {
-        h += `<div class="spin acell${a.on ? "" : " off"}"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="-1" aria-label="Decrease ${r.key} for analyte ${i + 1}">−</button><input id="an-${r.role}-${i}" data-ai="${i}" data-rk="${r.key}" type="text" inputmode="decimal" spellcheck="false" aria-label="${r.key} for analyte ${i + 1}"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="1" aria-label="Increase ${r.key} for analyte ${i + 1}">+</button></div>`;
-      });
-      h += `<button type="button" class="calcbtn" data-role="${r.role}" aria-label="Calculate ${r.key} from the other two"></button>`;
-    });
-    h += `<span></span><span></span>` + [1].map(i => `<button type="button" class="copya" data-copy="${i}" aria-label="Copy Analyte 1 constants into analyte ${i + 1}">Copy A1</button>`).join("") + `<span></span>`;
-    $("rates").innerHTML = h + `</div>`;
+    $("rates").innerHTML = S.an.map((a, i) => {
+      const other = i === 0 ? 1 : 0;
+      const fields = ROWS.map(r => `<div class="ac-f"><div class="ac-l"><label for="an-${r.key === "ctop" ? "c" : r.role}-${i}">${r.label}<span class="u">${r.unit()}</span></label>${r.role ? `<button type="button" class="calcbtn" data-ai="${i}" data-role="${r.role}" aria-label="Calculate ${r.key} for analyte ${i + 1} from the other two"></button>` : ""}</div>
+        <div class="spin acell"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="-1" aria-label="Decrease ${r.key} for analyte ${i + 1}">−</button><input id="an-${r.key === "ctop" ? "c" : r.role}-${i}" data-ai="${i}" data-rk="${r.key}" type="text" inputmode="decimal" spellcheck="false" aria-label="${r.key} for analyte ${i + 1}"><button type="button" data-ai="${i}" data-rk="${r.key}" data-d="1" aria-label="Increase ${r.key} for analyte ${i + 1}">+</button></div></div>`).join("");
+      return `<div class="acard" id="an-card-${i}" style="--ac:${keyColor(i)}">
+        <div class="ac-head"><span class="dot"></span><input type="text" class="aname" id="an-name-${i}" value="${esc(a.name)}" spellcheck="false" aria-label="Name of analyte ${i + 1}">
+          <button type="button" class="copya" data-copy="${i}" data-from="${other}" aria-label="Copy Analyte ${other + 1} values into analyte ${i + 1}">Copy A${other + 1}</button>
+          <label class="tgl"><input type="checkbox" id="an-on-${i}" aria-label="Include analyte ${i + 1}"><span></span></label></div>
+        <div class="ac-grid">${fields}</div>
+        <div class="ac-hint" id="an-hint-${i}"></div></div>`;
+    }).join("");
   }
   function refreshRates() {
-    ROWS.forEach(r => {
-      const calc = S.calc === r.role;
-      S.an.forEach((a, i) => {
-        const t = $(`an-${r.role}-${i}`);
-        if (document.activeElement !== t) t.value = sci(a[r.key]);
+    S.an.forEach((a, i) => {
+      ROWS.forEach(r => {
+        const t = $(`an-${r.key === "ctop" ? "c" : r.role}-${i}`), calc = !!r.role && a.calc === r.role;
+        if (document.activeElement !== t) t.value = sci(toDisp(r, a[r.key]));
         t.readOnly = calc || !a.on; t.classList.toggle("calc", calc);
         t.parentElement.classList.toggle("is-calc", calc);
-        t.parentElement.classList.toggle("off", !a.on);
         t.parentElement.querySelectorAll("button").forEach(b => {
           b.disabled = calc || !a.on || (+b.dataset.d < 0 ? a[r.key] <= r.lo * 1.0001 : a[r.key] >= r.hi * 0.9999);
         });
       });
-      const b = document.querySelector(`.calcbtn[data-role="${r.role}"]`);
-      b.setAttribute("aria-pressed", calc); b.title = calc ? "Calculated from the other two" : "Calculate this from the other two";
-    });
-    S.an.forEach((a, i) => {
       const cb = $(`an-on-${i}`); cb.checked = a.on;
       cb.disabled = a.on && active().length === 1;           // keep at least one analyte
-      cb.parentElement.classList.toggle("off", !a.on);
+      $(`an-card-${i}`).classList.toggle("off", !a.on);
+      const cs = concs(a); $(`an-hint-${i}`).textContent = `Series: ${conc(cs[0])} → ${conc(cs[cs.length - 1])}`;
+    });
+    document.querySelectorAll(".calcbtn[data-role]").forEach(b => {
+      const on = S.an[+b.dataset.ai].calc === b.dataset.role;
+      b.setAttribute("aria-pressed", on); b.title = on ? "Calculated from the other two" : "Calculate this from the other two";
     });
   }
   $("rates").addEventListener("input", e => {
     const t = e.target;
-    if (t.classList.contains("aname")) { S.an[+t.id.split("-")[2]].name = t.value || `Analyte ${+t.id.split("-")[2] + 1}`; legend(); stats(); table(); return; }
+    if (t.classList.contains("aname")) { const i = +t.id.split("-")[2]; S.an[i].name = t.value || `Analyte ${i + 1}`; table(); return; }
     if (!t.dataset.rk || t.readOnly) return;
     const a = S.an[+t.dataset.ai], r = ROWS.find(x => x.key === t.dataset.rk);
-    const v = parseNum(t.value), ok = isFinite(v) && v >= r.lo && v <= r.hi;
+    const v = fromDisp(r, parseNum(t.value)), ok = isFinite(v) && v >= r.lo && v <= r.hi;
     t.classList.toggle("bad", !ok); if (!ok) return;
     a[r.key] = v; applyCalc(a); refreshRates(); clearPreset(); render();
   });
   $("rates").addEventListener("focusout", e => {
     const t = e.target;
-    if (t.dataset && t.dataset.rk) { t.classList.remove("bad"); t.value = sci(S.an[+t.dataset.ai][t.dataset.rk]); }
+    if (t.dataset && t.dataset.rk) { const r = ROWS.find(x => x.key === t.dataset.rk); t.classList.remove("bad"); t.value = sci(toDisp(r, S.an[+t.dataset.ai][r.key])); }
     if (t.classList && t.classList.contains("aname")) t.value = S.an[+t.id.split("-")[2]].name;
   });
   $("rates").addEventListener("change", e => {
     const t = e.target; if (t.type !== "checkbox") return;
-    const i = +t.id.split("-")[2]; S.an[i].on = t.checked;
+    S.an[+t.id.split("-")[2]].on = t.checked;
     refreshRates(); clearPreset(); render();
   });
   $("rates").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    if (b.classList.contains("calcbtn")) { S.calc = b.dataset.role; refreshRates(); return; }
-    if (b.dataset.copy) { const t = S.an[+b.dataset.copy], a0 = S.an[0]; t.ka = a0.ka; t.kd = a0.kd; t.KD = a0.KD; refreshRates(); clearPreset(); render(); return; }
+    if (b.classList.contains("calcbtn")) { S.an[+b.dataset.ai].calc = b.dataset.role; refreshRates(); return; }
+    if (b.dataset.copy) { const t = S.an[+b.dataset.copy], f = S.an[+b.dataset.from]; ["ka", "kd", "KD", "ctop", "calc"].forEach(k => t[k] = f[k]); refreshRates(); clearPreset(); render(); return; }
     const a = S.an[+b.dataset.ai], r = ROWS.find(x => x.key === b.dataset.rk);
-    const v = ladder(a[r.key], +b.dataset.d); if (v === undefined) return;
-    a[r.key] = Math.min(r.hi, Math.max(r.lo, v)); applyCalc(a); refreshRates(); clearPreset(); render();
+    const v = ladder(toDisp(r, a[r.key]), +b.dataset.d); if (v === undefined) return;
+    a[r.key] = Math.min(r.hi, Math.max(r.lo, fromDisp(r, v))); applyCalc(a); refreshRates(); clearPreset(); render();
   });
+  $("unit").addEventListener("change", e => { S.unit = e.target.value; buildRates(); refreshRates(); });
 
   function renderModel() {
     const M = MODELS.one;
@@ -822,17 +827,14 @@ td.c { display: flex; align-items: center; gap: 8px; }
     legend(); draw();
   });
 
-  function stats() {
-    const cs = concs();
-    $("range-hint").textContent = `${conc(cs[0])} → ${conc(cs[cs.length - 1])}`;
-  }
+  function stats() {}
 
   function table() {
-    const cs = concs(), A = active();
+    const A = active();
     $("res-gen").innerHTML = "";
     const fewNote = S.n < 5 ? `<b>Only ${S.n} concentration${S.n === 1 ? "" : "s"}.</b> Use at least 5 concentrations spanning the K<sub>D</sub> so a global fit can separate k<sub>a</sub> and k<sub>d</sub> reliably.` : "";
     $("res-grid").innerHTML = A.map(a => {
-      const K = KDof(a);
+      const K = KDof(a), cs = concs(a);
       const rows = cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { c, eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; });
       const body = rows.map(r => `<tr><td class="ca">${conc(r.c)}</td><td>${sci(r.c / K)}</td><td>${sci(r.kobs)}</td><td>${dur(Math.log(20) / r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td></tr>`).join("");
       // design notes for this analyte
@@ -860,9 +862,8 @@ td.c { display: flex; align-items: center; gap: 8px; }
   function syncInputs() {
     $("ta-t").value = S.ta; $("td-t").value = S.td;
     $("tb-t").value = S.tb;
-    $("ctop").value = sci(S.ctop); $("fold").value = S.fold; $("rmax").value = +S.rmax.toPrecision(4);
-    $("n-t").value = S.n; spinState();
-    $("sigma").value = +S.sigma.toPrecision(3);
+    $("fold").value = S.fold; $("rmax").value = +S.rmax.toPrecision(4);
+    $("n-t").value = S.n; $("unit").value = S.unit; spinState();
   }
   function render() { stats(); legend(); draw(); table(); }
 
@@ -881,14 +882,13 @@ td.c { display: flex; align-items: center; gap: 8px; }
       const v = parseNum(e.target.value), ok = isFinite(v) && v >= min && v <= max;
       e.target.classList.toggle("bad", !ok); if (!ok) return;
       S[key] = key === "n" ? Math.round(v) : v; if (key === "n") S.hidden.clear();
-      clearPreset(); spinState(); render();
+      clearPreset(); spinState(); refreshRates(); render();
     });
     $(id).addEventListener("blur", e => { e.target.classList.remove("bad"); e.target.value = fmt ? fmt(S[key]) : S[key]; });
   };
   single("tb-t", "tb", 0, 1e4);
   single("ta-t", "ta", 1, 1e5);
   single("td-t", "td", 1, 1e5);
-  single("ctop", "ctop", 1e-6, 1e9, sci);
   single("fold", "fold", 1.1, 20);
   single("n-t", "n", 1, 12);
   // 1-2-5 ladder for values that span decades
@@ -897,13 +897,11 @@ td.c { display: flex; align-items: center; gap: 8px; }
   const TIMES = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 450, 600, 900, 1200, 1800, 2400, 3600, 5400, 7200, 10800, 14400, 21600, 28800, 43200, 86400];
   const SPIN = {
     fold: { key: "fold", step: 0.5, min: 1.5, max: 20 },
-    ctop: { key: "ctop", seq: CONCS, min: 1e-3, max: 1e7, fmt: sci },
     "ta-t": { key: "ta", seq: TIMES.slice(1), min: 5, max: 1e5 },
     "td-t": { key: "td", seq: TIMES.slice(1), min: 5, max: 1e5 },
     "tb-t": { key: "tb", seq: TIMES, min: 0, max: 1e4 },
     "n-t": { key: "n", step: 1, min: 1, max: 12 },
     rmax: { key: "rmax", ladder: true, min: 0.1, max: 1e5 },
-    sigma: { key: "sigma", ladder: true, min: 0, max: 1e4 },
   };
   function spinState() {
     document.querySelectorAll(".spin button[data-for]").forEach(b => {
@@ -922,30 +920,29 @@ td.c { display: flex; align-items: center; gap: 8px; }
     v = Math.min(c.max, Math.max(c.min, (c.ladder || c.seq) ? v : +v.toFixed(2)));
     S[c.key] = v; $(b.dataset.for).value = c.fmt ? c.fmt(v) : v; $(b.dataset.for).classList.remove("bad");
     if (c.key === "n") S.hidden.clear();
-    clearPreset(); spinState(); render();
+    clearPreset(); spinState(); refreshRates(); render();
   }));
   single("rmax", "rmax", 0.1, 1e5);
-  single("sigma", "sigma", 0, 1e4);
 
   function clearPreset() { document.querySelectorAll("#presets button").forEach(b => b.setAttribute("aria-pressed", "false")); }
   $("presets").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     const P = PRESETS[b.dataset.p];
-    S.an.forEach((a, i) => { a.on = i < (P.onN ?? P.an.length); if (P.an[i]) { a.ka = P.an[i][0]; a.kd = P.an[i][1]; } });
-    ["ta", "td", "ctop", "fold", "n"].forEach(k => S[k] = P[k]);
+    S.an.forEach((a, i) => { a.on = i < (P.onN ?? P.an.length); if (P.an[i]) { [a.ka, a.kd, a.ctop] = P.an[i]; } });
+    ["ta", "td", "fold", "n", "unit"].forEach(k => S[k] = P[k]);
     S.hidden.clear(); syncK();
     clearPreset(); b.setAttribute("aria-pressed", "true");
-    syncInputs(); refreshRates(); render();
+    syncInputs(); buildRates(); refreshRates(); render();
   });
 
   // ---------- copy (tab-separated) ----------
   function buildTSV() {
-    const cs = concs(), t0 = -S.tb, t1 = S.ta + S.td;
+    const t0 = -S.tb, t1 = S.ta + S.td;
     const step = Math.max(0.1, +((t1 - t0) / 1000).toPrecision(1));
     const times = []; for (let t = t0; t <= t1 + 1e-9; t += step) times.push(+t.toFixed(3));
     const cols = [], heads = [];
     active().forEach(a => {
-      const r = rng(12345 + a.i * 7919);
+      const r = rng(12345 + a.i * 7919), cs = concs(a);
       cs.forEach(c => {
         heads.push(`${a.name} ${conc(c)} (RU)`);
         cols.push(simulate(a, c, times).map(v => v * S.rmax + (S.sigma > 0 ? S.sigma * gauss(r) : 0)));
@@ -956,23 +953,24 @@ td.c { display: flex; align-items: center; gap: 8px; }
     return out;
   }
   function buildResultsTSV() {
-    const cs = concs(), A = active();
+    const A = active();
     const num = v => +v.toPrecision(4);
-    let r1 = [""], r2 = ["[A] (nM)"];
+    let r1 = [], r2 = [];
     A.forEach(a => {
-      r1.push(`${a.name} (KD ${conc(KDof(a))}, teq95 ${dur(Math.log(20) / (a.ka * cs[cs.length - 1] * 1e-9 + a.kd))}, t½ ${dur(Math.LN2 / a.kd)}, residence ${dur(1 / a.kd)})`, "", "", "", "", "");
-      r2.push("[A]/KD", "kobs (s-1)", "teq95 (s)", "f_eq", "f_end", "f_end/f_eq (%)");
+      const cs = concs(a);
+      r1.push(`${a.name} (KD ${conc(KDof(a))}, teq95 ${dur(Math.log(20) / (a.ka * cs[cs.length - 1] * 1e-9 + a.kd))}, t½ ${dur(Math.LN2 / a.kd)}, residence ${dur(1 / a.kd)})`, "", "", "", "", "", "");
+      r2.push("[A] (nM)", "[A]/KD", "kobs (s-1)", "teq95 (s)", "f_eq", "f_end", "f_end/f_eq (%)");
     });
     const rows = [r1, r2];
-    cs.forEach(c => {
-      const row = [num(c)];
+    for (let q = 0; q < S.n; q++) {
+      const row = [];
       A.forEach(a => {
-        const eq = feq(a, c), [end] = simulate(a, c, [S.ta]);
+        const c = concs(a)[q], eq = feq(a, c), [end] = simulate(a, c, [S.ta]);
         const ko = a.ka * c * 1e-9 + a.kd;
-        row.push(num(c / KDof(a)), num(ko), num(Math.log(20) / ko), eq.toFixed(4), end.toFixed(4), (eq > 0 ? 100 * end / eq : 0).toFixed(1));
+        row.push(num(c), num(c / KDof(a)), num(ko), num(Math.log(20) / ko), eq.toFixed(4), end.toFixed(4), (eq > 0 ? 100 * end / eq : 0).toFixed(1));
       });
       rows.push(row);
-    });
+    }
     return rows.map(r => r.join("\t")).join("\n") + "\n";
   }
   $("copy-res").addEventListener("click", async () => {
