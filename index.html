@@ -225,7 +225,7 @@ tr.grp td .sw { margin-right: 6px; vertical-align: middle; }
 .readout { font: 12px var(--f-num); color: var(--muted); min-height: 1.4em; }
 #chart { position: relative; }
 #chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 12px var(--f-num); box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tip { position: absolute; pointer-events: none; background: color-mix(in srgb, var(--surface) 80%, transparent); backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 12px var(--f-num); box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tip .t { color: var(--muted); margin-bottom: 4px; }
 .tip .r { display: grid; grid-template-columns: 7.2em 6.4em 4em 5em; column-gap: 14px; align-items: center; }
 .tip .r > span:not(:first-child) { text-align: right; justify-self: end; }
