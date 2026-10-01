@@ -518,7 +518,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
   // per analyte: [ka (M⁻¹s⁻¹), kd (s⁻¹), top concentration (nM)]
   const PRESETS = {
     protein:  { an: [[1e5, 1e-3, 100], [1e5, 1e-2, 1000]], onN: 1, ta: 300, td: 600, fold: 2, n: 6, unit: "nM" },
-    antibody: { an: [[5e5, 5e-5, 5], [2e5, 2e-4, 10]], onN: 1, ta: 300, td: 1800, fold: 2, n: 6, unit: "nM" },
+    antibody: { an: [[5e5, 5e-5, 10], [2e5, 2e-4, 10]], onN: 1, ta: 600, td: 1800, fold: 2, n: 6, unit: "nM" },
     fragment: { an: [[1e5, 0.5, 50000], [2e4, 1, 500000]], onN: 1, ta: 60, td: 60, fold: 2, n: 8, unit: "µM" },
     samekd:   { an: [[1e6, 1e-2, 100], [1e5, 1e-3, 100]], ta: 600, td: 1200, fold: 2, n: 5, unit: "nM" },
   };
