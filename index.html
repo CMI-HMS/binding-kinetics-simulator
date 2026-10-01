@@ -475,6 +475,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
         <li><b>R<sub>max</sub> (RU)</b> — Response when every ligand site is occupied. Depends on how much ligand is immobilized.</li>
         <li><b>Noise σ</b> — Standard deviation of random Gaussian noise added to each simulated point.</li>
         <li><b>K<sub>D</sub> (M)</b> — Equilibrium dissociation constant, k<sub>d</sub>/k<sub>a</sub>. The analyte concentration that occupies half the sites at equilibrium. Lower means tighter binding.</li>
+        <li><b>t<sub>eq</sub> (95%)</b> — Time for association to reach 95% of R<sub>eq</sub>: ln 20 / k<sub>obs</sub> ≈ 3/k<sub>obs</sub>. It is shortest at high concentration; the heading shows the value for the lowest concentration in the series, the slowest curve, and the table gives it for each concentration. As [A] → 0 it approaches ln 20 / k<sub>d</sub>.</li>
         <li><b>Dissociation t½</b> — Time for half the complex to dissociate, ln 2 / k<sub>d</sub>.</li>
         <li><b>Residence time</b> — Average lifetime of a complex, 1/k<sub>d</sub>.</li>
         <li><b>R (RU)</b> — Response. Proportional to the mass of analyte bound: R = R<sub>max</sub>·f. SPR reports resonance units; BLI reports a wavelength shift in nm, which plays the same role.</li>
@@ -833,7 +834,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
     $("res-grid").innerHTML = A.map(a => {
       const K = KDof(a);
       const rows = cs.map(c => { const eq = feq(a, c), [end, dEnd] = simulate(a, c, [S.ta, S.ta + S.td]); return { c, eq, end, dEnd, pct: eq > 0 ? 100 * end / eq : 0, kobs: a.ka * c * 1e-9 + a.kd }; });
-      const body = rows.map(r => `<tr><td class="ca">${conc(r.c)}</td><td>${sci(r.c / K)}</td><td>${sci(r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td></tr>`).join("");
+      const body = rows.map(r => `<tr><td class="ca">${conc(r.c)}</td><td>${sci(r.c / K)}</td><td>${sci(r.kobs)}</td><td>${dur(Math.log(20) / r.kobs)}</td><td>${r.eq.toFixed(3)}</td><td>${r.end.toFixed(3)}</td><td class="${r.pct >= 95 ? "ok" : "warn"}">${r.pct >= 99.95 ? "100" : r.pct.toFixed(1)}</td></tr>`).join("");
       // design notes for this analyte
       const notes = fewNote ? [fewNote] : [], top = rows[0];
       const allSS = rows.every(r => r.pct >= 95), anyLow = rows.some(r => r.pct < 50);
@@ -848,8 +849,8 @@ td.c { display: flex; align-items: center; gap: 8px; }
         ? `<b>Low concentrations are far from equilibrium.</b> Steady-state (equilibrium) analysis of these curves would underestimate R<sub>eq</sub> and bias K<sub>D</sub> upward; rely on the kinetic fit or lengthen the association phase.`
         : `<b>Some curves stop short of equilibrium.</b> Lengthen the association phase if you plan a steady-state analysis.`);
       return `<article class="panel rcard" style="--ac:${keyColor(a.i)}">
-        <header class="rc-head"><h3>${esc(a.name)}</h3><div class="rc-stats"><span>K<sub>D</sub> <b>${conc(K)}</b></span><span>t½ <b>${dur(Math.LN2 / a.kd)}</b></span><span>Residence <b>${dur(1 / a.kd)}</b></span></div></header>
-        <div class="scroll"><table class="rtab"><thead><tr><th class="ca">[A]</th><th><span class="sym">[A]/K<sub>D</sub></span></th><th><span class="sym">k<sub>obs</sub></span> <span class="sym">(s⁻¹)</span></th><th><span class="sym">f<sub>eq</sub></span></th><th><span class="sym">f<sub>end</sub></span></th><th><span class="sym">f<sub>end</sub>/f<sub>eq</sub> (%)</span></th></tr></thead><tbody>${body}</tbody></table></div>
+        <header class="rc-head"><h3>${esc(a.name)}</h3><div class="rc-stats"><span>K<sub>D</sub> <b>${conc(K)}</b></span><span title="Time for the lowest concentration in the series, the slowest curve, to reach 95% of its equilibrium response: ln 20 / k_obs">t<sub>eq</sub> (95%) <b>${dur(Math.log(20) / (a.ka * cs[cs.length - 1] * 1e-9 + a.kd))}</b></span><span>t½ <b>${dur(Math.LN2 / a.kd)}</b></span><span>Residence <b>${dur(1 / a.kd)}</b></span></div></header>
+        <div class="scroll"><table class="rtab"><thead><tr><th class="ca">[A]</th><th><span class="sym">[A]/K<sub>D</sub></span></th><th><span class="sym">k<sub>obs</sub></span> <span class="sym">(s⁻¹)</span></th><th><span class="sym">t<sub>eq</sub></span> (95%)</th><th><span class="sym">f<sub>eq</sub></span></th><th><span class="sym">f<sub>end</sub></span></th><th><span class="sym">f<sub>end</sub>/f<sub>eq</sub> (%)</span></th></tr></thead><tbody>${body}</tbody></table></div>
         <div class="rc-notes"><h4>Experiment design notes</h4>${notes.map(n => `<p>${n}</p>`).join("")}</div>
       </article>`;
     }).join("");
@@ -959,15 +960,16 @@ td.c { display: flex; align-items: center; gap: 8px; }
     const num = v => +v.toPrecision(4);
     let r1 = [""], r2 = ["[A] (nM)"];
     A.forEach(a => {
-      r1.push(`${a.name} (KD ${conc(KDof(a))}, t½ ${dur(Math.LN2 / a.kd)}, residence ${dur(1 / a.kd)})`, "", "", "", "");
-      r2.push("[A]/KD", "kobs (s-1)", "f_eq", "f_end", "f_end/f_eq (%)");
+      r1.push(`${a.name} (KD ${conc(KDof(a))}, teq95 ${dur(Math.log(20) / (a.ka * cs[cs.length - 1] * 1e-9 + a.kd))}, t½ ${dur(Math.LN2 / a.kd)}, residence ${dur(1 / a.kd)})`, "", "", "", "", "");
+      r2.push("[A]/KD", "kobs (s-1)", "teq95 (s)", "f_eq", "f_end", "f_end/f_eq (%)");
     });
     const rows = [r1, r2];
     cs.forEach(c => {
       const row = [num(c)];
       A.forEach(a => {
         const eq = feq(a, c), [end] = simulate(a, c, [S.ta]);
-        row.push(num(c / KDof(a)), num(a.ka * c * 1e-9 + a.kd), eq.toFixed(4), end.toFixed(4), (eq > 0 ? 100 * end / eq : 0).toFixed(1));
+        const ko = a.ka * c * 1e-9 + a.kd;
+        row.push(num(c / KDof(a)), num(ko), num(Math.log(20) / ko), eq.toFixed(4), end.toFixed(4), (eq > 0 ? 100 * end / eq : 0).toFixed(1));
       });
       rows.push(row);
     });
