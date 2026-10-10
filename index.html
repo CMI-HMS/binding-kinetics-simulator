@@ -321,7 +321,8 @@ td.c { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 520px) { .rcard { padding: 12px 10px; } .rcard .rtab th, .rcard .rtab td { padding: 5px 3px; } .rcard .rtab td { font-size: 11.5px; } .rcard .rtab th { font-size: 10px; letter-spacing: 0.02em; } }
 #res-gen p.gen { margin: 0; font-size: 13px; color: var(--muted); }
 #res-gen p.gen b { color: var(--fg); }
-.credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 24px; }
+.credit .built { margin-left: auto; font-size: 11.5px; }
 .credit p { margin: 0; }
 .credit b { color: var(--fg); font-weight: 600; }
 .credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line); }
@@ -501,6 +502,7 @@ td.c { display: flex; align-items: center; gap: 8px; }
   </div>
   <footer class="credit">
     <p><b>Kelly Arnett</b> · <a href="https://cmi.hms.harvard.edu/" target="_blank" rel="noopener noreferrer">Center for Macromolecular Interactions (CMI)</a>, Harvard Medical School</p>
+    <p class="built">Built with Claude Opus 5.5 (Anthropic)</p>
   </footer>
 </div>
 
